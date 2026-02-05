@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Painel de Controle - FakeCall</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        telegram: '#2AABEE',
+                        darkbg: '#1c2938',
+                        card: '#10161b'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0e1621;
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        .input-group {
+            background: #17212b;
+            border: 1px solid #2b5278;
+            transition: border-color 0.2s;
+        }
+        .input-group:focus-within {
+            border-color: #2AABEE;
+        }
+        /* Scrollbar customizada */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0e1621; }
+        ::-webkit-scrollbar-thumb { background: #2b5278; border-radius: 3px; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center p-4 pb-20">
+
+    <!-- Header -->
+    <header class="w-full max-w-lg mb-8 mt-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-telegram rounded-full flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.6 2.7a10 10 0 1 0 5.7 5.7"/><circle cx="12" cy="12" r="2"/></svg>
+            </div>
+            <h1 class="text-xl font-bold">Gerador de Chamadas</h1>
+        </div>
+        <a href="/" target="_blank" class="text-xs text-telegram hover:underline">Ir para Home &rarr;</a>
+    </header>
+
+    <!-- Main Card -->
+    <main class="w-full max-w-lg space-y-6">
+        
+        <!-- Formulário -->
+        <div class="bg-[#17212b] p-6 rounded-2xl shadow-lg border border-[#0e1621]">
+            
+            <!-- Nome -->
+            <div class="mb-5">
+                <label class="block text-gray-400 text-xs uppercase font-bold tracking-wider mb-2">Nome do Alvo</label>
+                <input type="text" id="inputName" class="w-full bg-[#0e1621] text-white p-3 rounded-lg border border-[#2b5278] focus:border-telegram focus:outline-none transition-colors placeholder-gray-600" placeholder="Ex: Amor, Chefe, Cliente" value="Usuário">
+            </div>
+
+            <!-- Vídeo URL -->
+            <div class="mb-5">
+                <label class="block text-gray-400 text-xs uppercase font-bold tracking-wider mb-2">Link do Vídeo (MP4)</label>
+                <div class="flex gap-2">
+                    <input type="text" id="inputVideo" class="w-full bg-[#0e1621] text-white p-3 rounded-lg border border-[#2b5278] focus:border-telegram focus:outline-none transition-colors placeholder-gray-600 text-sm" placeholder="https://..." value="https://videos.pexels.com/video-files/4350035/4350035-sd_506_960_30fps.mp4">
+                    <button onclick="checkVideo()" class="bg-[#2b5278] hover:bg-[#35628d] text-white px-4 rounded-lg text-sm transition-colors" title="Testar Vídeo">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    </button>
+                </div>
+                
+                <!-- Preview Area -->
+                <div id="videoPreviewContainer" class="hidden mt-3 bg-black rounded-lg overflow-hidden border border-gray-700 relative aspect-video">
+                    <video id="videoPreview" class="w-full h-full object-cover" loop playsinline muted></video>
+                    <div class="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">Preview</div>
+                </div>
+                <p id="videoError" class="hidden text-red-400 text-xs mt-2">Erro: Não foi possível carregar este vídeo.</p>
+            </div>
+
+            <!-- Tempo -->
+            <div class="mb-6">
+                <label class="block text-gray-400 text-xs uppercase font-bold tracking-wider mb-2">Expiração</label>
+                <div class="grid grid-cols-3 gap-3">
+                    <button type="button" onclick="setTime(5)" class="time-btn bg-[#0e1621] border border-[#2b5278] hover:bg-[#2b5278] py-2 rounded-lg text-sm text-gray-300 transition-colors" data-val="5">5 min</button>
+                    <button type="button" onclick="setTime(30)" class="time-btn bg-[#0e1621] border border-[#2b5278] hover:bg-[#2b5278] py-2 rounded-lg text-sm text-gray-300 transition-colors" data-val="30">30 min</button>
+                    <button type="button" onclick="setTime(0)" class="time-btn bg-[#2AABEE] border border-[#2AABEE] py-2 rounded-lg text-sm text-white font-medium shadow-lg shadow-blue-500/20" data-val="0">Nunca</button>
+                </div>
+                <input type="hidden" id="inputTime" value="0">
+            </div>
+
+            <!-- Action -->
+            <button onclick="generateLink()" class="w-full bg-telegram hover:bg-[#2390c9] text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-500/20 transform active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                GERAR LINK ÚNICO
+            </button>
+        </div>
+
+        <!-- Resultado -->
+        <div id="resultArea" class="hidden animate-fade-in-up">
+            <div class="bg-[#17212b] p-1 rounded-2xl border border-green-500/30 shadow-[0_0_20px_rgba(0,255,0,0.1)]">
+                <div class="bg-[#0e1621] rounded-xl p-4 flex flex-col gap-3">
+                    <label class="text-green-400 text-xs uppercase font-bold text-center">Link Gerado com Sucesso!</label>
+                    <textarea id="finalLink" class="w-full bg-transparent text-gray-300 text-sm p-2 h-20 resize-none focus:outline-none font-mono break-all" readonly></textarea>
+                    <div class="flex gap-2">
+                        <button onclick="copyLink()" id="btnCopy" class="flex-1 bg-green-600 hover:bg-green-500 text-white font-medium py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
+                            <span>Copiar</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                        </button>
+                        <a id="btnTest" href="#" target="_blank" class="flex-1 bg-[#2b5278] hover:bg-[#35628d] text-white font-medium py-2 rounded-lg transition-colors flex items-center justify-center gap-2 text-center no-underline">
+                            Testar
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Histórico -->
+        <div class="mt-8">
+            <h3 class="text-gray-500 text-xs font-bold uppercase tracking-wider mb-4 px-2">Recentes</h3>
+            <div id="historyList" class="space-y-3">
+                <!-- Itens injetados via JS -->
+                <p class="text-center text-gray-600 text-sm py-4">Nenhum histórico ainda.</p>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // === Lógica de Interface ===
+        
+        // Seleção de Tempo
+        function setTime(mins) {
+            document.getElementById('inputTime').value = mins;
+            document.querySelectorAll('.time-btn').forEach(btn => {
+                const val = parseInt(btn.getAttribute('data-val'));
+                if (val === mins) {
+                    btn.className = "time-btn bg-[#2AABEE] border border-[#2AABEE] py-2 rounded-lg text-sm text-white font-medium shadow-lg shadow-blue-500/20 transition-all";
+                } else {
+                    btn.className = "time-btn bg-[#0e1621] border border-[#2b5278] hover:bg-[#2b5278] py-2 rounded-lg text-sm text-gray-300 transition-colors";
+                }
+            });
+        }
+
+        // Preview de Vídeo
+        const videoInput = document.getElementById('inputVideo');
+        const videoPreview = document.getElementById('videoPreview');
+        const previewContainer = document.getElementById('videoPreviewContainer');
+        const videoError = document.getElementById('videoError');
+
+        function checkVideo() {
+            const url = videoInput.value.trim();
+            if (!url) return;
+
+            videoPreview.src = url;
+            previewContainer.classList.remove('hidden');
+            videoError.classList.add('hidden');
+
+            videoPreview.play().then(() => {
+                // Sucesso
+                videoPreview.muted = true;
+            }).catch(e => {
+                console.warn("Erro ao reproduzir preview", e);
+                // Pode ser erro de codec ou CORS, mas tentamos mostrar a caixa mesmo assim
+            });
+            
+            videoPreview.onerror = () => {
+                videoError.classList.remove('hidden');
+                previewContainer.classList.add('hidden');
+            };
+        }
+
+        // Detecta mudança no input de vídeo para auto-check (debounce opcional, aqui manual/blur)
+        videoInput.addEventListener('blur', () => {
+            if(videoInput.value.length > 10) checkVideo();
+        });
+
+        // === Lógica de Geração ===
+
+        function generateLink() {
+            const name = document.getElementById('inputName').value.trim() || "Usuário";
+            const video = document.getElementById('inputVideo').value.trim();
+            const mins = parseInt(document.getElementById('inputTime').value);
+            
+            if (!video) {
+                alert("Por favor, insira uma URL de vídeo.");
+                return;
+            }
+
+            // Calcula Timestamp de expiração
+            let expiryTime = null;
+            if (mins > 0) {
+                expiryTime = new Date().getTime() + (mins * 60 * 1000);
+            }
+            
+            // Payload
+            const data = {
+                n: name,
+                v: video,
+                e: expiryTime
+            };
+            
+            // Encode
+            const jsonString = JSON.stringify(data);
+            const base64Param = btoa(jsonString);
+            
+            // Monta Link (Baseado na URL atual, assume que admin.html está na mesma pasta que index.html)
+            // Remove 'admin.html' ou 'painel' da URL para pegar a raiz
+            const baseUrl = window.location.origin + window.location.pathname.replace('admin.html', '').replace('painel', '');
+            // Limpa barras duplicadas no final se houver
+            const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
+            
+            const finalLink = `${cleanBaseUrl}?d=${base64Param}`;
+            
+            // Exibe
+            const resultArea = document.getElementById('resultArea');
+            const finalLinkArea = document.getElementById('finalLink');
+            const btnTest = document.getElementById('btnTest');
+            
+            resultArea.classList.remove('hidden');
+            finalLinkArea.value = finalLink;
+            btnTest.href = finalLink;
+
+            // Salva no histórico
+            saveToHistory(name, finalLink);
+            
+            // Scroll suave até o resultado
+            resultArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function copyLink() {
+            const copyText = document.getElementById("finalLink");
+            copyText.select();
+            copyText.setSelectionRange(0, 99999); 
+            
+            navigator.clipboard.writeText(copyText.value).then(() => {
+                const btn = document.getElementById('btnCopy');
+                const originalHtml = btn.innerHTML;
+                btn.innerHTML = `<span>Copiado!</span>`;
+                btn.classList.replace('bg-green-600', 'bg-blue-600');
+                setTimeout(() => {
+                    btn.innerHTML = originalHtml;
+                    btn.classList.replace('bg-blue-600', 'bg-green-600');
+                }, 2000);
+            });
+        }
+
+        // === Histórico ===
+        
+        function saveToHistory(name, link) {
+            let history = JSON.parse(localStorage.getItem('fakecall_history') || '[]');
+            // Adiciona no topo
+            history.unshift({ name, link, date: new Date().toLocaleTimeString() });
+            // Mantém apenas os últimos 5
+            if (history.length > 5) history.pop();
+            localStorage.setItem('fakecall_history', JSON.stringify(history));
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('historyList');
+            const history = JSON.parse(localStorage.getItem('fakecall_history') || '[]');
+            
+            if (history.length === 0) return;
+
+            list.innerHTML = history.map(item => `
+                <div class="bg-[#17212b] p-3 rounded-lg flex justify-between items-center border border-[#0e1621] hover:border-[#2b5278] transition-colors group">
+                    <div class="overflow-hidden">
+                        <p class="font-bold text-sm text-gray-200 truncate">${item.name}</p>
+                        <p class="text-xs text-gray-500 truncate w-48">${item.link}</p>
+                    </div>
+                    <button onclick="navigator.clipboard.writeText('${item.link}'); alert('Copiado!')" class="text-telegram hover:text-white p-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // Init
+        renderHistory();
+        // Check video inicial se houver valor
+        if(videoInput.value) checkVideo();
+
+    </script>
+</body>
+</html>
