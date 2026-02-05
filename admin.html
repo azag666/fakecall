@@ -208,8 +208,11 @@
             const base64Param = btoa(jsonString);
             
             // Monta Link (Baseado na URL atual, assume que admin.html está na mesma pasta que index.html)
-            // Remove 'admin.html' ou 'painel' da URL para pegar a raiz
-            const baseUrl = window.location.origin + window.location.pathname.replace('admin.html', '').replace('painel', '');
+            // Nova lógica: remove qualquer nome de arquivo do final da URL para pegar a raiz
+            const path = window.location.pathname;
+            const directory = path.substring(0, path.lastIndexOf('/'));
+            const baseUrl = window.location.origin + directory;
+            
             // Limpa barras duplicadas no final se houver
             const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
             
