@@ -40,10 +40,14 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .fade-in { animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Utilitário para quebrar texto longo */
+        .break-anywhere { overflow-wrap: anywhere; }
     </style>
 </head>
 <body class="bg-darkbg min-h-screen pb-20">
 
+    <!-- Navbar -->
     <nav class="sticky top-0 z-50 bg-darkbg/90 backdrop-blur-md border-b border-white/10 px-4 py-3 flex justify-between items-center">
         <div class="flex items-center gap-3">
             <div class="w-8 h-8 bg-gradient-to-br from-[#2AABEE] to-[#0088cc] rounded-full flex items-center justify-center">
@@ -51,15 +55,20 @@
             </div>
             <h1 class="text-sm font-bold tracking-wide">Painel Cloud</h1>
         </div>
-        <button onclick="clearForm()" class="bg-[#2AABEE] text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg active:scale-95 transition-transform">
-            + Nova
-        </button>
+        <div class="flex gap-2">
+            <button onclick="openApiModal()" class="bg-white/10 hover:bg-white/20 text-white text-xs font-bold px-3 py-1.5 rounded-full transition-colors flex items-center gap-1">
+                🤖 API Bot
+            </button>
+            <button onclick="clearForm()" class="bg-[#2AABEE] text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg active:scale-95 transition-transform">
+                + Nova
+            </button>
+        </div>
     </nav>
 
     <div class="max-w-md mx-auto p-4 space-y-8">
 
-        <!-- STATUS -->
-        <div id="statusMsg" class="hidden fixed top-16 left-1/2 transform -translate-x-1/2 bg-green-600 text-white text-xs px-4 py-2 rounded-full shadow-xl z-50">
+        <!-- STATUS TOAST -->
+        <div id="statusMsg" class="hidden fixed top-16 left-1/2 transform -translate-x-1/2 bg-green-600 text-white text-xs px-4 py-2 rounded-full shadow-xl z-[70]">
             Ação realizada com sucesso!
         </div>
 
@@ -144,16 +153,16 @@
             <div id="listLoading" class="hidden justify-center py-10"><div class="loader"></div></div>
             
             <div id="savedList" class="space-y-3">
-                <!-- Itens serão injetados via JS -->
+                <!-- Itens injetados via JS -->
             </div>
         </section>
 
     </div>
 
-    <!-- MODAL RESULTADO -->
+    <!-- MODAL 1: RESULTADO DO LINK -->
     <div id="resultModal" class="fixed inset-0 z-[60] hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm fade-in">
         <div class="bg-card w-full max-w-sm rounded-2xl p-6 border border-white/10 shadow-2xl relative">
-            <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+            <button onclick="closeModal('resultModal')" class="absolute top-4 right-4 text-gray-400 hover:text-white"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
             <div class="text-center mb-6">
                 <h3 class="text-white font-bold text-lg">Link Gerado!</h3>
                 <p class="text-gray-400 text-xs">Copie e envie para iniciar a chamada.</p>
@@ -162,8 +171,35 @@
                 <input id="finalLink" class="bg-transparent w-full text-xs text-gray-300 focus:outline-none" readonly>
             </div>
             <div class="flex gap-2">
-                <button onclick="copyLink()" id="btnCopy" class="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl transition-colors">Copiar</button>
+                <button onclick="copyToClipboard('finalLink')" id="btnCopy" class="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl transition-colors">Copiar</button>
                 <a id="btnTest" href="#" target="_blank" class="flex-1 bg-input hover:bg-white/10 text-white font-bold py-3 rounded-xl text-center transition-colors">Testar</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: INSTRUÇÕES DO BOT -->
+    <div id="apiModal" class="fixed inset-0 z-[60] hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm fade-in">
+        <div class="bg-card w-full max-w-sm rounded-2xl p-6 border border-white/10 shadow-2xl relative">
+            <button onclick="closeModal('apiModal')" class="absolute top-4 right-4 text-gray-400 hover:text-white"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+            
+            <div class="mb-4">
+                <h3 class="text-white font-bold text-lg flex items-center gap-2">
+                    <span>🤖</span> Integração Bot
+                </h3>
+                <p class="text-gray-400 text-xs mt-1">Faça uma requisição GET para esta URL para gerar um link novo a cada clique.</p>
+            </div>
+
+            <div class="bg-darkbg p-3 rounded-xl border border-white/5 mb-4">
+                <label class="text-[10px] text-gray-500 font-bold uppercase mb-1 block">URL da API</label>
+                <div class="text-xs text-[#2AABEE] break-anywhere font-mono bg-black/30 p-2 rounded border border-white/5">
+                    <span id="apiUrlDisplay">https://seu-site.vercel.app/api/calls?id=SEU_ID</span>
+                </div>
+            </div>
+
+            <div class="text-[10px] text-gray-400">
+                <p class="mb-2">1. Copie o <strong>ID</strong> da chamada na lista abaixo.</p>
+                <p class="mb-2">2. Substitua <strong>SEU_ID</strong> na URL acima pelo ID copiado.</p>
+                <p>3. A API retornará um JSON com o campo <code>url</code> pronto para uso.</p>
             </div>
         </div>
     </div>
@@ -172,21 +208,18 @@
         let currentEditId = null;
 
         // === API COMMUNICATION ===
-        
         async function loadList() {
             const listEl = document.getElementById('savedList');
             const loading = document.getElementById('listLoading');
             
             listEl.innerHTML = '';
-            loading.classList.remove('hidden');
-            loading.classList.add('flex');
+            loading.classList.remove('hidden'); loading.classList.add('flex');
 
             try {
                 const res = await fetch('/api/calls');
                 const calls = await res.json();
                 
-                loading.classList.add('hidden');
-                loading.classList.remove('flex');
+                loading.classList.add('hidden'); loading.classList.remove('flex');
 
                 if (calls.length === 0) {
                     listEl.innerHTML = '<div class="text-center py-8 text-gray-600 text-xs">Nenhuma chamada salva.</div>';
@@ -194,30 +227,40 @@
                 }
 
                 listEl.innerHTML = calls.map(c => `
-                    <div class="bg-card p-4 rounded-xl border border-white/5 flex items-center justify-between group">
-                        <div class="flex items-center gap-3 overflow-hidden">
+                    <div class="bg-card p-4 rounded-xl border border-white/5 flex flex-col gap-3 group">
+                        
+                        <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-full bg-input flex-shrink-0 bg-cover bg-center border border-white/10" style="background-image: url('${c.avatar || ''}');">
                                 ${!c.avatar ? '<div class="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500">'+c.name.charAt(0)+'</div>' : ''}
                             </div>
-                            <div class="min-w-0">
+                            <div class="min-w-0 flex-1">
                                 <h4 class="text-sm font-bold text-white truncate">${c.name}</h4>
-                                <div class="text-[10px] text-gray-500 flex gap-2">
-                                    <span>${c.mins > 0 ? c.mins + ' min' : 'Infinito'}</span>
-                                    <span class="text-[#2AABEE] font-mono">ID: ${c.id.substring(0,6)}...</span>
-                                </div>
+                                <p class="text-[10px] text-gray-500">${c.mins > 0 ? c.mins + ' min' : 'Infinito'}</p>
+                            </div>
+                            
+                            <!-- Botões de Ação -->
+                            <div class="flex items-center gap-1">
+                                <button onclick="getLinkFromApi('${c.id}')" class="bg-[#2AABEE]/10 hover:bg-[#2AABEE]/20 text-[#2AABEE] p-2 rounded-lg" title="Testar Link">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                                </button>
+                                <button onclick='fillForm(${JSON.stringify(c)})' class="text-gray-500 hover:text-white p-2" title="Editar">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                </button>
+                                <button onclick="deleteCall('${c.id}')" class="text-gray-500 hover:text-red-400 p-2" title="Excluir">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                </button>
                             </div>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <button onclick="getLinkFromApi('${c.id}')" class="bg-[#2AABEE]/10 hover:bg-[#2AABEE]/20 text-[#2AABEE] p-2 rounded-lg" title="Gerar Link">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                            </button>
-                            <button onclick='fillForm(${JSON.stringify(c)})' class="text-gray-500 hover:text-white p-2" title="Editar">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                            </button>
-                            <button onclick="deleteCall('${c.id}')" class="text-gray-500 hover:text-red-400 p-2" title="Excluir">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                            </button>
+
+                        <!-- ID COPIÁVEL (NOVO) -->
+                        <div class="bg-black/30 p-2 rounded-lg border border-white/5 flex items-center justify-between cursor-pointer hover:bg-black/50 transition-colors" onclick="copyText('${c.id}')" title="Clique para copiar ID">
+                            <div class="flex items-center gap-2 overflow-hidden">
+                                <span class="text-[10px] text-gray-500 font-bold">ID:</span>
+                                <span class="text-[10px] text-[#2AABEE] font-mono truncate">${c.id}</span>
+                            </div>
+                            <svg class="text-gray-600" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                         </div>
+
                     </div>
                 `).join('');
 
@@ -270,12 +313,11 @@
             loadList();
         }
 
-        // Obtém o link fresco diretamente da API (igual o BOT faria)
         async function getLinkFromApi(id) {
             try {
                 const res = await fetch(`/api/calls?id=${id}`);
                 const data = await res.json();
-                if(data.url) showModal(data.url);
+                if(data.url) showModal('resultModal', data.url);
                 else alert('Erro ao gerar link');
             } catch(e) { alert('Erro de conexão'); }
         }
@@ -358,7 +400,7 @@
             const dir = path.substring(0, path.lastIndexOf('/'));
             const baseUrl = (window.location.origin + dir).replace(/\/$/, "") + '/';
             
-            showModal(`${baseUrl}?d=${base64Param}`);
+            showModal('resultModal', `${baseUrl}?d=${base64Param}`);
         }
 
         function setTime(mins) {
@@ -381,24 +423,55 @@
             setTime(5);
         }
 
-        function showModal(url) {
-            document.getElementById('finalLink').value = url;
-            document.getElementById('btnTest').href = url;
-            document.getElementById('resultModal').classList.remove('hidden');
-            document.getElementById('resultModal').classList.add('flex');
+        function openApiModal() {
+            // Atualiza URL de exemplo
+            const baseUrl = window.location.origin + window.location.pathname.replace('admin.html', '').replace('painel', '');
+            const cleanUrl = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
+            document.getElementById('apiUrlDisplay').textContent = `${cleanUrl}api/calls?id=SEU_ID`;
+            
+            document.getElementById('apiModal').classList.remove('hidden');
+            document.getElementById('apiModal').classList.add('flex');
         }
-        function closeModal() { document.getElementById('resultModal').classList.add('hidden'); document.getElementById('resultModal').classList.remove('flex'); }
+
+        function showModal(modalId, url) {
+            if(url) {
+                document.getElementById('finalLink').value = url;
+                document.getElementById('btnTest').href = url;
+            }
+            document.getElementById(modalId).classList.remove('hidden');
+            document.getElementById(modalId).classList.add('flex');
+        }
+        
+        function closeModal(modalId) { 
+            document.getElementById(modalId).classList.add('hidden'); 
+            document.getElementById(modalId).classList.remove('flex'); 
+        }
+        
+        function copyToClipboard(elementId) {
+            // Se for um input
+            const el = document.getElementById(elementId);
+            const text = el ? el.value : elementId; // Se não achar input, usa o texto passado (para ID)
+            
+            navigator.clipboard.writeText(text);
+            showStatus('Copiado!');
+        }
+        
         function copyLink() {
-            const el = document.getElementById("finalLink");
-            el.select(); navigator.clipboard.writeText(el.value);
+            copyToClipboard('finalLink');
             const btn = document.getElementById('btnCopy');
             btn.textContent = "Copiado!";
             setTimeout(() => btn.textContent = "Copiar", 2000);
         }
+        
         function showStatus(msg) {
             const el = document.getElementById('statusMsg');
             el.textContent = msg; el.classList.remove('hidden');
-            setTimeout(() => el.classList.add('hidden'), 3000);
+            setTimeout(() => el.classList.add('hidden'), 2000);
+        }
+        
+        function copyText(text) {
+            navigator.clipboard.writeText(text);
+            showStatus('ID Copiado!');
         }
 
         // Carrega lista ao iniciar
