@@ -11,10 +11,10 @@
 
         /* MODOS DE EXIBIÇÃO */
         body.audio-mode { background: radial-gradient(circle at center, #1c2938 0%, #0f161e 100%); }
-        /* CORREÇÃO ÁUDIO: Em vez de display:none, usamos opacidade 0 e pointer-events none para manter o elemento ativo no DOM */
+        /* CORREÇÃO ÁUDIO: Mantém o vídeo no DOM mas invisível para garantir playback de áudio */
         body.audio-mode #remoteVideo { opacity: 0; pointer-events: none; position: absolute; z-index: -1; } 
-        body.audio-mode #localVideo { display: none; } 
-        body.audio-mode #activeCallAvatar { display: flex; } 
+        body.audio-mode #localVideo { display: none; } /* Garante que vídeo local suma */
+        body.audio-mode #activeCallAvatar { display: flex; } /* Mostra avatar */
 
         /* Camadas */
         #remoteVideo { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; background: #1c1c1d; }
@@ -103,7 +103,6 @@
         
         <!-- ELEMENTOS DE MÍDIA -->
         <video id="remoteVideo" playsinline preload="auto">Seu navegador não suporta vídeo.</video>
-        <!-- Elemento de Áudio dedicado para maior compatibilidade se necessário, mas usaremos o video por enquanto -->
         <div id="activeCallAvatar"><div class="active-avatar-img" id="activeAvatarImg"></div></div>
         <video id="localVideo" autoplay playsinline muted></video>
 
@@ -208,11 +207,22 @@
 
         // Chamada
         document.getElementById('btnJoin').addEventListener('click', async () => {
+            // Lógica de Permissão de Mídia condicional
+            let constraints = { audio: true, video: { facingMode: "user" } };
+            
+            // Se for modo áudio, pede APENAS áudio
+            if (config.type === 'audio') {
+                constraints = { audio: true, video: false };
+            }
+
             try { 
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: true });
-                ui.localVideo.srcObject = stream;
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                // Só aplica ao elemento de vídeo se houver vídeo (modo video)
+                if (config.type !== 'audio') {
+                    ui.localVideo.srcObject = stream;
+                }
                 setupAudioEcho(stream);
-            } catch (e) { console.log("Sem mídia"); }
+            } catch (e) { console.log("Sem mídia autorizada", e); }
 
             ui.start.classList.add('hidden'); ui.status.classList.remove('hidden'); document.querySelectorAll('.ripple').forEach(r => r.classList.add('animating'));
             if (isExpired) setTimeout(() => failCall("Chamada terminada"), 1500); else setTimeout(startCall, 2000);
