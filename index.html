@@ -199,8 +199,10 @@
         // Decodifica parametros da URL
         if (dataParam) {
             try {
-                // Tenta usar o próprio parametro como ID, se não, cria um hash simples
-                callId = dataParam.substring(0, 20); 
+                // USA O DATA PARAM INTEIRO COMO ID ÚNICO
+                // Isso garante que se o tempo de expiração mudar (mesmo que nome/vídeo sejam iguais),
+                // o link será tratado como uma nova chamada.
+                callId = dataParam; 
                 
                 const decoded = JSON.parse(atob(dataParam));
                 config.name = decoded.n || config.name;
