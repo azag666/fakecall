@@ -153,7 +153,7 @@
             <div id="listLoading" class="hidden justify-center py-10"><div class="loader"></div></div>
             
             <div id="savedList" class="space-y-3">
-                <!-- Itens injetados via JS -->
+                <!-- Itens serão injetados via JS -->
             </div>
         </section>
 
@@ -186,20 +186,34 @@
                 <h3 class="text-white font-bold text-lg flex items-center gap-2">
                     <span>🤖</span> Integração Bot
                 </h3>
-                <p class="text-gray-400 text-xs mt-1">Faça uma requisição GET para esta URL para gerar um link novo a cada clique.</p>
+                <p class="text-gray-400 text-xs mt-1">Gere links únicos automaticamente via API.</p>
             </div>
 
+            <!-- Campo 1: Template de URL -->
             <div class="bg-darkbg p-3 rounded-xl border border-white/5 mb-4">
-                <label class="text-[10px] text-gray-500 font-bold uppercase mb-1 block">URL da API</label>
+                <label class="text-[10px] text-gray-500 font-bold uppercase mb-1 block">Modelo de Requisição</label>
                 <div class="text-xs text-[#2AABEE] break-anywhere font-mono bg-black/30 p-2 rounded border border-white/5">
                     <span id="apiUrlDisplay">https://seu-site.vercel.app/api/calls?id=SEU_ID</span>
                 </div>
             </div>
 
+            <!-- Campo 2: Link de Teste Rápido (Novo) -->
+            <div id="testLinkContainer" class="bg-darkbg p-3 rounded-xl border border-white/5 mb-4 hidden">
+                <label class="text-[10px] text-gray-500 font-bold uppercase mb-1 block">Link de Teste (ID Selecionado)</label>
+                <div class="flex items-center gap-2">
+                    <input id="apiTestLink" class="bg-black/30 w-full text-xs text-green-400 font-mono p-2 rounded border border-white/5 focus:outline-none" readonly>
+                    <button onclick="copyToClipboard('apiTestLink')" class="bg-white/10 p-2 rounded hover:bg-white/20 text-white">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    </button>
+                    <a id="apiTestBtn" href="#" target="_blank" class="bg-white/10 p-2 rounded hover:bg-white/20 text-white">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                    </a>
+                </div>
+            </div>
+
             <div class="text-[10px] text-gray-400">
-                <p class="mb-2">1. Copie o <strong>ID</strong> da chamada na lista abaixo.</p>
-                <p class="mb-2">2. Substitua <strong>SEU_ID</strong> na URL acima pelo ID copiado.</p>
-                <p>3. A API retornará um JSON com o campo <code>url</code> pronto para uso.</p>
+                <p class="mb-2">1. Copie o <strong>ID</strong> da chamada na lista.</p>
+                <p>2. Substitua <strong>SEU_ID</strong> na URL ou use o gerador acima clicando no ícone de "link" na lista.</p>
             </div>
         </div>
     </div>
@@ -243,6 +257,9 @@
                                 <button onclick="getLinkFromApi('${c.id}')" class="bg-[#2AABEE]/10 hover:bg-[#2AABEE]/20 text-[#2AABEE] p-2 rounded-lg" title="Testar Link">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
                                 </button>
+                                <button onclick="showApiLink('${c.id}')" class="text-gray-500 hover:text-white p-2" title="Link de API">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                                </button>
                                 <button onclick='fillForm(${JSON.stringify(c)})' class="text-gray-500 hover:text-white p-2" title="Editar">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                                 </button>
@@ -252,7 +269,7 @@
                             </div>
                         </div>
 
-                        <!-- ID COPIÁVEL (NOVO) -->
+                        <!-- ID COPIÁVEL -->
                         <div class="bg-black/30 p-2 rounded-lg border border-white/5 flex items-center justify-between cursor-pointer hover:bg-black/50 transition-colors" onclick="copyText('${c.id}')" title="Clique para copiar ID">
                             <div class="flex items-center gap-2 overflow-hidden">
                                 <span class="text-[10px] text-gray-500 font-bold">ID:</span>
@@ -320,6 +337,21 @@
                 if(data.url) showModal('resultModal', data.url);
                 else alert('Erro ao gerar link');
             } catch(e) { alert('Erro de conexão'); }
+        }
+
+        function showApiLink(id) {
+            openApiModal();
+            const baseUrl = window.location.origin + window.location.pathname.replace('admin.html', '').replace('painel', '');
+            const cleanUrl = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
+            const fullApiUrl = `${cleanUrl}api/calls?id=${id}`;
+            
+            const container = document.getElementById('testLinkContainer');
+            const input = document.getElementById('apiTestLink');
+            const btn = document.getElementById('apiTestBtn');
+            
+            container.classList.remove('hidden');
+            input.value = fullApiUrl;
+            btn.href = fullApiUrl;
         }
 
         // === UPLOAD GENÉRICO ===
@@ -428,6 +460,7 @@
             const baseUrl = window.location.origin + window.location.pathname.replace('admin.html', '').replace('painel', '');
             const cleanUrl = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
             document.getElementById('apiUrlDisplay').textContent = `${cleanUrl}api/calls?id=SEU_ID`;
+            document.getElementById('testLinkContainer').classList.add('hidden');
             
             document.getElementById('apiModal').classList.remove('hidden');
             document.getElementById('apiModal').classList.add('flex');
