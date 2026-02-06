@@ -66,7 +66,7 @@
         
         <div class="bg-[#2c2c2e] p-6 rounded-2xl shadow-xl border border-gray-800">
             
-            <!-- 1. FOTO DE PERFIL (NOVO) -->
+            <!-- 1. FOTO DE PERFIL -->
             <div class="mb-5 flex items-center gap-4">
                 <div class="relative w-20 h-20 flex-shrink-0">
                     <!-- Preview da Imagem -->
@@ -121,7 +121,7 @@
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
                     </div>
-                    <input type="text" id="inputVideo" class="w-full input-dark pl-9 p-3 rounded-lg text-xs text-gray-300 truncate" placeholder="Link do vídeo..." readonly>
+                    <input type="text" id="inputVideo" class="w-full input-dark pl-9 p-3 rounded-lg text-xs text-gray-300 truncate" placeholder="Link do vídeo..." >
                 </div>
             </div>
 
@@ -235,35 +235,46 @@
         });
 
         // === GERAR LINK ===
-        function generateLink() {
-            const name = document.getElementById('inputName').value.trim() || "Usuário";
-            const video = inputVideo.value.trim();
-            const avatar = inputAvatarUrl.value.trim();
-            const mins = parseInt(document.getElementById('inputTime').value);
-            
-            if (!video) { alert("O vídeo é obrigatório!"); return; }
+        function utf8_to_b64(str) {
+            return window.btoa(unescape(encodeURIComponent(str)));
+        }
 
-            let expiryTime = null;
-            if (mins > 0) expiryTime = new Date().getTime() + (mins * 60 * 1000);
-            
-            const data = { 
-                n: name, 
-                v: video, 
-                a: avatar, // Nova propriedade: Avatar
-                e: expiryTime 
-            };
-            const base64Param = btoa(JSON.stringify(data));
-            
-            const path = window.location.pathname;
-            const dir = path.substring(0, path.lastIndexOf('/'));
-            const baseUrl = (window.location.origin + dir).replace(/\/$/, "") + '/';
-            
-            const finalLink = `${baseUrl}?d=${base64Param}`;
-            
-            document.getElementById('resultArea').classList.remove('hidden');
-            document.getElementById('finalLink').value = finalLink;
-            document.getElementById('btnTest').href = finalLink;
-            document.getElementById('resultArea').scrollIntoView({ behavior: 'smooth' });
+        function generateLink() {
+            try {
+                const name = document.getElementById('inputName').value.trim() || "Usuário";
+                const video = inputVideo.value.trim();
+                const avatar = inputAvatarUrl.value.trim();
+                const mins = parseInt(document.getElementById('inputTime').value);
+                
+                if (!video) { alert("O vídeo é obrigatório!"); return; }
+
+                let expiryTime = null;
+                if (mins > 0) expiryTime = new Date().getTime() + (mins * 60 * 1000);
+                
+                const data = { 
+                    n: name, 
+                    v: video, 
+                    a: avatar, 
+                    e: expiryTime 
+                };
+                
+                // Usa função segura para acentos e emojis
+                const base64Param = utf8_to_b64(JSON.stringify(data));
+                
+                const path = window.location.pathname;
+                const dir = path.substring(0, path.lastIndexOf('/'));
+                const baseUrl = (window.location.origin + dir).replace(/\/$/, "") + '/';
+                
+                const finalLink = `${baseUrl}?d=${base64Param}`;
+                
+                document.getElementById('resultArea').classList.remove('hidden');
+                document.getElementById('finalLink').value = finalLink;
+                document.getElementById('btnTest').href = finalLink;
+                document.getElementById('resultArea').scrollIntoView({ behavior: 'smooth' });
+            } catch (err) {
+                alert("Erro ao gerar link: " + err.message);
+                console.error(err);
+            }
         }
 
         // === UTILITÁRIOS ===
