@@ -3,164 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Chamada de Vídeo</title>
-    <!-- Tailwind CSS para estilização rápida e responsiva -->
+    <title>Telegram Call</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Reset e Fontes estilo iOS/Telegram */
+        /* Telegram Font Stack & Reset */
         html, body {
-            margin: 0; 
-            padding: 0; 
-            width: 100%; 
-            height: 100dvh; /* Altura dinâmica para mobile */
-            overflow: hidden; 
-            background-color: #000; 
-            color: white;
+            margin: 0; padding: 0; width: 100%; height: 100dvh;
+            overflow: hidden; background-color: #000; color: white;
             font-family: -apple-system, "SF Pro Text", "San Francisco", BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            -webkit-tap-highlight-color: transparent; 
-            overscroll-behavior: none; 
-            user-select: none;
+            -webkit-tap-highlight-color: transparent; overscroll-behavior: none; user-select: none;
         }
 
-        /* Camada do Vídeo Remoto (Ocupa toda a tela ao fundo) */
+        /* Camadas */
         #remoteVideo {
-            position: absolute; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%;
-            object-fit: cover; 
-            z-index: 1; 
-            background: #1c1c1d; /* Fundo escuro para carregamento */
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover; z-index: 1; background: #1c1c1d;
         }
         
-        /* Camada do Vídeo Local (Picture-in-Picture) */
+        /* PiP (Local Video) - Agora com posicionamento dinâmico via JS */
         #localVideo {
             position: absolute; 
-            top: 16px; 
+            /* Posição inicial: Canto inferior direito (mas acima dos controlos) */
+            bottom: 120px; 
             right: 16px;
-            width: 95px; 
-            height: 140px;
-            object-fit: cover; 
-            border-radius: 14px;
+            width: 95px; height: 140px;
+            object-fit: cover; border-radius: 14px;
             box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-            z-index: 10; 
+            z-index: 30; /* Acima do overlay */
             background-color: #2b2b2b;
-            transition: opacity 0.3s ease, transform 0.3s ease;
+            transition: opacity 0.3s ease;
+            /* Cursor para indicar que é arrastável */
+            cursor: grab;
+            touch-action: none; /* Impede scroll ao arrastar no mobile */
         }
+        #localVideo:active { cursor: grabbing; }
 
-        /* Overlay (Gradientes e Elementos de UI) */
+        /* Overlay */
         .overlay {
-            position: absolute; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%; 
-            z-index: 20;
-            display: flex; 
-            flex-direction: column; 
-            justify-content: space-between;
-            /* Gradiente sutil para garantir leitura do texto branco */
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 20;
+            display: flex; flex-direction: column; justify-content: space-between;
             background: linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0) 15%, rgba(0,0,0,0) 85%, rgba(0,0,0,0.4) 100%);
-            pointer-events: none; /* Permite clicar no vídeo se necessário */
+            pointer-events: none;
         }
 
-        /* Container dos Botões Inferiores */
+        /* Botões de Controle */
         .controls-container {
-            pointer-events: auto; 
-            padding-bottom: 32px;
-            display: flex; 
-            justify-content: center; 
-            gap: 32px;
-            align-items: center; 
-            width: 100%;
+            pointer-events: auto; padding-bottom: 32px;
+            display: flex; justify-content: center; gap: 32px;
+            align-items: center; width: 100%;
         }
-
-        /* Estilo dos Botões (Glassmorphism) */
         .control-btn {
-            width: 56px; 
-            height: 56px; 
-            border-radius: 50%;
+            width: 56px; height: 56px; border-radius: 50%;
             background-color: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(20px); 
-            -webkit-backdrop-filter: blur(20px);
-            display: flex; 
-            justify-content: center; 
-            align-items: center;
-            border: none; 
-            color: white; 
-            transition: background 0.2s, transform 0.1s;
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            display: flex; justify-content: center; align-items: center;
+            border: none; color: white; transition: background 0.2s;
             cursor: pointer;
         }
-        .control-btn:active { 
-            background-color: rgba(255, 255, 255, 0.3); 
-            transform: scale(0.95);
-        }
-        /* Estado Ativo (Fundo Branco, Ícone Preto) */
-        .control-btn.active-state { 
-            background-color: white; 
-            color: black; 
-        }
+        .control-btn:active { background-color: rgba(255, 255, 255, 0.3); }
+        .control-btn.active-state { background-color: white; color: black; }
         
-        /* Botão Encerrar (Vermelho) */
         .btn-end {
-            width: 72px; 
-            height: 72px;
-            background-color: #FF3B30; /* Vermelho padrão iOS */
+            width: 72px; height: 72px;
+            background-color: #FF3B30;
             box-shadow: 0 4px 12px rgba(255, 59, 48, 0.3);
         }
-        .btn-end:active { 
-            background-color: #D63028; 
-        }
+        .btn-end:active { background-color: #D63028; }
 
-        /* Telas de Status (Preview, Conectando, Fim) */
+        /* Telas de Status */
         .fullscreen-layer {
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%;
-            z-index: 50; 
-            display: flex; 
-            flex-direction: column;
-            align-items: center; 
-            justify-content: center;
-            background: #1c252f; /* Azul escuro padrão Telegram */
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 50; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            background: #1c252f;
         }
         
-        /* Avatar e Animação de Chamada (Ripple) */
-        .avatar-box { 
-            position: relative; 
-            width: 120px; 
-            height: 120px; 
-            margin-bottom: 20px; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-        }
+        /* Avatar & Ripple */
+        .avatar-box { position: relative; width: 120px; height: 120px; margin-bottom: 20px; display: flex; justify-content: center; align-items: center; }
         .avatar {
-            width: 100%; 
-            height: 100%; 
-            border-radius: 50%;
+            width: 100%; height: 100%; border-radius: 50%;
             background: linear-gradient(135deg, #50a7ea 0%, #3e92d3 100%);
-            display: flex; 
-            justify-content: center; 
-            align-items: center;
-            font-size: 48px; 
-            font-weight: 500; 
-            color: white; 
-            z-index: 2;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 48px; font-weight: 500; color: white; z-index: 2;
         }
         .ripple {
-            position: absolute; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%;
-            border-radius: 50%; 
-            background: rgba(80, 167, 234, 0.3);
-            z-index: 1; 
-            opacity: 0;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            border-radius: 50%; background: rgba(80, 167, 234, 0.3);
+            z-index: 1; opacity: 0;
         }
         .animating { animation: ripple 2s infinite ease-out; }
         .ripple:nth-child(2) { animation-delay: 0.5s; }
@@ -170,16 +99,13 @@
             100% { transform: scale(2.5); opacity: 0; }
         }
 
-        /* Classes Utilitárias */
         .hidden { display: none !important; }
         .text-shadow { text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
-        .safe-area-top { padding-top: env(safe-area-inset-top); }
-        .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
     </style>
 </head>
 <body>
 
-    <!-- 1. TELA DE PREVIEW (Entrada) -->
+    <!-- 1. Tela de Preview -->
     <div id="startScreen" class="fullscreen-layer bg-black">
         <div class="flex flex-col items-center w-full px-6 text-center">
             <div class="mb-6 w-24 h-24 rounded-full bg-gray-800 flex items-center justify-center">
@@ -194,7 +120,7 @@
         </div>
     </div>
 
-    <!-- 2. TELA DE STATUS (Conectando...) -->
+    <!-- 2. Tela de Status (Conectando...) -->
     <div id="statusScreen" class="fullscreen-layer hidden">
         <div class="avatar-box">
             <div class="ripple"></div><div class="ripple"></div>
@@ -203,51 +129,52 @@
         <h2 id="statusName" class="text-2xl font-semibold mb-2">Usuário</h2>
         <p id="statusText" class="text-gray-300 text-base">A ligar...</p>
 
-        <!-- Ações mostradas se falhar -->
+        <!-- Ações de Falha -->
         <div id="missedCallActions" class="hidden mt-12 flex flex-col items-center gap-4 animate-fade-in">
             <p class="text-white/60 text-sm">A chamada terminou ou expirou.</p>
-            <button onclick="window.location.reload()" class="text-[#2AABEE] font-medium px-6 py-2 rounded-lg hover:bg-white/5 transition">
-                Ligar Novamente
+            <!-- Botão de ligar novamente removido ou desabilitado para simular bloqueio real -->
+            <button disabled class="text-gray-500 font-medium px-6 py-2 rounded-lg cursor-not-allowed border border-gray-700">
+                Chamada Finalizada
             </button>
         </div>
     </div>
 
-    <!-- 3. INTERFACE DA CHAMADA (Ativa) -->
+    <!-- 3. Interface da Chamada -->
     <div id="callInterface" class="hidden w-full h-full relative bg-black">
-        <!-- Vídeo Remoto (O vídeo que você configurou) -->
+        <!-- Vídeo Remoto -->
         <video id="remoteVideo" playsinline preload="auto">
             Seu navegador não suporta vídeo.
         </video>
 
-        <!-- Vídeo Local (Câmera do usuário) -->
+        <!-- Vídeo Local (Arrastável) -->
         <video id="localVideo" autoplay playsinline muted></video>
 
-        <!-- Overlay de Interface -->
+        <!-- Overlay -->
         <div class="overlay">
-            <!-- Topo: Nome e Timer -->
+            <!-- Topo: Nome e Tempo -->
             <div class="flex flex-col items-center mt-12 safe-area-top">
                 <h3 id="callName" class="text-xl font-semibold text-shadow tracking-wide">Nome</h3>
                 <span id="callTimer" class="text-sm font-normal text-white/90 text-shadow mt-1">00:00</span>
             </div>
 
-            <!-- Rodapé: Botões de Controle -->
+            <!-- Rodapé: Controles -->
             <div class="controls-container safe-area-bottom">
                 <!-- Mute -->
                 <button class="control-btn" onclick="toggleMute()">
                     <svg id="iconMic" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
                 </button>
                 
-                <!-- Câmera On/Off -->
+                <!-- Camera -->
                 <button class="control-btn" onclick="toggleCam()">
                     <svg id="iconCam" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
                 </button>
 
-                <!-- Inverter Câmera (Visual) -->
+                <!-- Flip (Visual) -->
                 <button class="control-btn" onclick="flipCamVisual()">
                      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
                 </button>
 
-                <!-- Encerrar Chamada -->
+                <!-- Encerrar -->
                 <button class="control-btn btn-end" onclick="endCall(true)">
                     <svg width="34" height="34" viewBox="0 0 24 24" fill="currentColor"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" transform="rotate(135 12 12)"/></svg>
                 </button>
@@ -255,12 +182,10 @@
         </div>
     </div>
 
-    <!-- Scripts de Lógica -->
     <script>
-        // === 1. LEITURA DOS PARÂMETROS DA URL ===
+        // === 1. CONFIGURAÇÃO E DECODER ===
         const urlParams = new URLSearchParams(window.location.search);
         
-        // Configuração Padrão
         let config = { 
             name: "Usuário", 
             video: "", 
@@ -269,24 +194,34 @@
         
         const dataParam = urlParams.get('d');
         let isExpired = false;
+        let callId = null; // ID único para controlar o bloqueio
 
-        // Decodificador de Base64 para JSON
+        // Decodifica parametros da URL
         if (dataParam) {
             try {
+                // Tenta usar o próprio parametro como ID, se não, cria um hash simples
+                callId = dataParam.substring(0, 20); 
+                
                 const decoded = JSON.parse(atob(dataParam));
                 config.name = decoded.n || config.name;
                 config.video = decoded.v || "";
                 
-                // Validação de Expiração
+                // Valida expiração de tempo real
                 if (decoded.e && new Date().getTime() > decoded.e) {
                     isExpired = true;
                 }
             } catch (e) { 
-                console.error("Link inválido ou corrompido."); 
+                console.error("Link inválido"); 
             }
         }
 
-        // Mapeamento dos elementos da UI
+        // === BLOQUEIO DE REENTRADA ===
+        // Verifica se esta chamada específica já foi finalizada neste navegador
+        if (callId && localStorage.getItem('call_ended_' + callId)) {
+            isExpired = true; // Força estado expirado
+        }
+
+        // Elementos UI
         const ui = {
             start: document.getElementById('startScreen'),
             status: document.getElementById('statusScreen'),
@@ -298,59 +233,116 @@
             timer: document.getElementById('callTimer')
         };
 
-        // Aplicação dos dados na interface
+        // Popula dados na tela
         document.getElementById('previewName').textContent = config.name;
         document.getElementById('statusName').textContent = config.name;
         document.getElementById('callName').textContent = config.name;
         document.getElementById('avatarLetter').textContent = config.name.charAt(0).toUpperCase();
         
-        if (config.video) {
-            ui.remoteVideo.src = config.video;
-        }
+        if (config.video) ui.remoteVideo.src = config.video;
 
         let callInterval;
         let seconds = 0;
 
-        // === 2. EVENTOS DE INÍCIO ===
+        // === 2. LÓGICA DE ARRASTAR (DRAG & DROP) ===
+        const draggable = ui.localVideo;
+        let isDragging = false;
+        let startX, startY, initialLeft, initialTop;
 
-        // Botão "Atender Chamada"
+        // Eventos de Mouse/Toque
+        draggable.addEventListener('mousedown', startDrag);
+        draggable.addEventListener('touchstart', startDrag, { passive: false });
+
+        function startDrag(e) {
+            e.preventDefault(); // Impede scroll
+            isDragging = true;
+            
+            // Pega posição inicial
+            if (e.type === 'touchstart') {
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+            } else {
+                startX = e.clientX;
+                startY = e.clientY;
+            }
+
+            // Pega posição atual do elemento
+            const rect = draggable.getBoundingClientRect();
+            // Precisamos definir left/top explicitamente se ainda não estiverem
+            if (!draggable.style.left) draggable.style.left = rect.left + 'px';
+            if (!draggable.style.top) draggable.style.top = rect.top + 'px';
+            
+            // Removemos bottom/right para usar apenas left/top no movimento
+            draggable.style.bottom = 'auto';
+            draggable.style.right = 'auto';
+
+            initialLeft = parseFloat(draggable.style.left);
+            initialTop = parseFloat(draggable.style.top);
+
+            // Adiciona listeners globais
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('touchmove', drag, { passive: false });
+            document.addEventListener('mouseup', stopDrag);
+            document.addEventListener('touchend', stopDrag);
+        }
+
+        function drag(e) {
+            if (!isDragging) return;
+            e.preventDefault();
+
+            let clientX, clientY;
+            if (e.type === 'touchmove') {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+
+            const dx = clientX - startX;
+            const dy = clientY - startY;
+
+            draggable.style.left = (initialLeft + dx) + 'px';
+            draggable.style.top = (initialTop + dy) + 'px';
+        }
+
+        function stopDrag() {
+            isDragging = false;
+            document.removeEventListener('mousemove', drag);
+            document.removeEventListener('touchmove', drag);
+            document.removeEventListener('mouseup', stopDrag);
+            document.removeEventListener('touchend', stopDrag);
+        }
+
+
+        // === 3. EVENTOS DE CHAMADA ===
+
         document.getElementById('btnJoin').addEventListener('click', async () => {
-            // Tenta obter acesso à câmera do usuário
+            // Tenta câmera
             try { 
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: true });
                 ui.localVideo.srcObject = stream;
-            } catch (e) {
-                console.warn("Câmera bloqueada ou indisponível. Continuando apenas com vídeo remoto.");
-            }
+            } catch (e) { console.log("Sem câmera"); }
 
-            // Transição de tela
             ui.start.classList.add('hidden');
             ui.status.classList.remove('hidden');
             document.querySelectorAll('.ripple').forEach(r => r.classList.add('animating'));
 
             if (isExpired) {
-                // Se link expirado, mostra erro após 3 segundos
-                setTimeout(() => failCall("Chamada perdida"), 3000);
+                // Se já expirou ou foi finalizada antes, falha rápido
+                setTimeout(() => failCall("Chamada terminada"), 1500);
             } else {
-                // Se válido, conecta em 2 segundos
                 setTimeout(startCall, 2000);
             }
         });
 
-        // Função para iniciar a vídeo chamada
         function startCall() {
             ui.status.classList.add('hidden');
             ui.call.classList.remove('hidden');
             
-            // Inicia reprodução do vídeo
             const playPromise = ui.remoteVideo.play();
-            if (playPromise !== undefined) {
-                playPromise.catch(error => {
-                    console.log("Autoplay bloqueado. O vídeo iniciará após interação do usuário.");
-                });
-            }
+            if (playPromise !== undefined) playPromise.catch(e => console.log("Autoplay blocked"));
 
-            // Inicia contagem do tempo
             startTimer();
         }
 
@@ -363,23 +355,24 @@
             }, 1000);
         }
 
-        // === 3. FINALIZAÇÃO AUTOMÁTICA (IMPORTANTE) ===
-        // Ouve o evento 'ended' do vídeo para encerrar a chamada
+        // === 4. FIM DE CHAMADA E BLOQUEIO ===
+        
         ui.remoteVideo.addEventListener('ended', () => {
-            console.log("Vídeo terminou. Encerrando chamada.");
-            endCall(false); // false indica que não foi o usuário quem clicou
+            endCall(false); 
         });
 
-        // === 4. CONTROLES ===
-        
         function endCall(userAction) {
             clearInterval(callInterval);
             ui.remoteVideo.pause();
             
+            // MARCA A CHAMADA COMO FINALIZADA NO LOCALSTORAGE
+            if (callId) {
+                localStorage.setItem('call_ended_' + callId, 'true');
+            }
+            
             ui.call.classList.add('hidden');
             ui.status.classList.remove('hidden');
             
-            // Para as animações de ripple
             document.querySelectorAll('.ripple').forEach(r => r.classList.remove('animating'));
             
             failCall("Chamada terminada");
@@ -387,37 +380,24 @@
 
         function failCall(msg) {
             ui.statusText.textContent = msg;
-            ui.statusText.style.color = "#FF3B30"; // Cor de erro
+            ui.statusText.style.color = "#FF3B30";
             ui.actions.classList.remove('hidden');
             
-            // Desliga a câmera local
             if (ui.localVideo.srcObject) {
                 ui.localVideo.srcObject.getTracks().forEach(t => t.stop());
             }
         }
 
+        // Controles básicos
         function toggleMute() { 
-            const el = document.getElementById('iconMic').parentNode; 
-            el.classList.toggle('active-state');
-            const icon = document.getElementById('iconMic');
-            
-            // Alterna ícone visualmente
-            if(el.classList.contains('active-state')) {
-                 icon.innerHTML = `<line x1="1" y1="1" x2="23" y2="23"></line><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"></path><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"></path>`;
-            } else {
-                 icon.innerHTML = `<path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>`;
-            }
+            document.getElementById('iconMic').parentNode.classList.toggle('active-state');
         }
-        
         function toggleCam() { 
             ui.localVideo.classList.toggle('opacity-0');
-            const el = document.getElementById('iconCam').parentNode;
-            el.classList.toggle('active-state');
+            document.getElementById('iconCam').parentNode.classList.toggle('active-state');
         }
-
         function flipCamVisual() {
-            ui.localVideo.style.transform = "scaleX(-1)";
-            setTimeout(() => { ui.localVideo.style.transform = "scaleX(1)"; }, 200);
+            ui.localVideo.style.transform = ui.localVideo.style.transform === "scaleX(-1)" ? "scaleX(1)" : "scaleX(-1)";
         }
     </script>
 </body>
