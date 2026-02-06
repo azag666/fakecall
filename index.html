@@ -3,133 +3,186 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Video Call</title>
+    <title>Painel FakeCall</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        /* Mobile First & Fullscreen Fixes */
-        html, body {
-            margin: 0; padding: 0; width: 100%; height: 100dvh;
-            overflow: hidden; background-color: #000; color: white;
-            font-family: -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
-            -webkit-tap-highlight-color: transparent; overscroll-behavior: none; user-select: none;
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        telegram: '#2AABEE',
+                        darkbg: '#1c1c1d',
+                        card: '#2c2c2e'
+                    }
+                }
+            }
         }
-        #remoteVideo { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; background: #000; }
-        #localVideo { position: absolute; top: 16px; right: 16px; width: 100px; height: 150px; object-fit: cover; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 10; background-color: #1a1a1a; transition: all 0.3s ease; }
-        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 20; display: flex; flex-direction: column; justify-content: space-between; background: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0) 25%, rgba(0,0,0,0) 75%, rgba(0,0,0,0.6) 100%); pointer-events: none; }
-        .controls-container { pointer-events: auto; padding-bottom: 40px; display: flex; justify-content: center; gap: 24px; align-items: center; width: 100%; }
-        .control-btn { width: 56px; height: 56px; border-radius: 50%; background-color: rgba(255, 255, 255, 0.2); backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center; cursor: pointer; border: none; color: white; }
-        .btn-end { width: 72px; height: 72px; background-color: #FF3B30; }
-        .fullscreen-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #1c2938; }
-        .avatar { width: 120px; height: 120px; border-radius: 50%; background: linear-gradient(135deg, #6ab7ff 0%, #58A6FF 100%); display: flex; justify-content: center; align-items: center; font-size: 48px; font-weight: 600; color: white; z-index: 2; position: relative; }
-        .ripple { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100%; height: 100%; background-color: rgba(88, 166, 255, 0.3); border-radius: 50%; z-index: 1; }
-        .animating { animation: ripple 2s infinite ease-out; }
-        .ripple:nth-child(2) { animation-delay: 0.6s; }
-        @keyframes ripple { 0% { width: 120px; height: 120px; opacity: 0.6; } 100% { width: 320px; height: 320px; opacity: 0; } }
-        .hidden { display: none !important; }
+    </script>
+    <style>
+        body {
+            background-color: #000;
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Roboto, sans-serif;
+        }
+        .input-dark {
+            background: #1c1c1d;
+            border: 1px solid #3a3a3c;
+            color: white;
+            transition: all 0.2s;
+        }
+        .input-dark:focus {
+            border-color: #2AABEE;
+            outline: none;
+        }
     </style>
 </head>
-<body>
-    <!-- Preview Screen -->
-    <div id="startScreen" class="fullscreen-layer bg-black">
-        <div class="flex flex-col items-center w-full px-6">
-            <div class="mb-8 p-4 bg-gray-900 rounded-full">
-                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#58A6FF" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+<body class="min-h-screen flex flex-col items-center p-4">
+
+    <!-- Header -->
+    <header class="w-full max-w-lg my-6 flex items-center gap-3">
+        <div class="w-10 h-10 bg-gradient-to-br from-[#2AABEE] to-[#0088cc] rounded-full flex items-center justify-center shadow-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M15.6 2.7a10 10 0 1 0 5.7 5.7"/><circle cx="12" cy="12" r="2"/></svg>
+        </div>
+        <div>
+            <h1 class="text-lg font-bold">Painel de Controle</h1>
+            <p class="text-xs text-gray-500">Configuração de Chamada Bot</p>
+        </div>
+    </header>
+
+    <!-- Main Card -->
+    <main class="w-full max-w-lg space-y-4">
+        
+        <div class="bg-[#2c2c2e] p-6 rounded-2xl shadow-xl border border-gray-800">
+            
+            <!-- Nome -->
+            <div class="mb-5">
+                <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2 ml-1">Nome do Alvo</label>
+                <input type="text" id="inputName" class="w-full input-dark p-3.5 rounded-xl text-sm" placeholder="Ex: Amor, Cliente..." value="Usuário">
             </div>
-            <h1 class="text-2xl font-semibold mb-2 text-center" id="previewName">Chamada de Vídeo</h1>
-            <p class="text-gray-400 text-sm mb-12 text-center px-4">Clique para participar da chamada segura.</p>
-            <button id="btnJoin" class="bg-[#58A6FF] hover:bg-[#4a95ea] text-white font-semibold py-4 px-8 rounded-xl shadow-lg flex items-center gap-3 transition-transform active:scale-95">
-                Entrar na Chamada
+
+            <!-- Vídeo URL -->
+            <div class="mb-2">
+                <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2 ml-1">Link do Vídeo (MP4)</label>
+                <div class="flex gap-2">
+                    <input type="text" id="inputVideo" class="w-full input-dark p-3.5 rounded-xl text-sm" placeholder="Cole o link direto do vídeo aqui..." value="https://videos.pexels.com/video-files/4350035/4350035-sd_506_960_30fps.mp4">
+                    <button onclick="checkVideo()" class="bg-[#3a3a3c] hover:bg-[#48484a] text-white px-4 rounded-xl transition-colors">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Aviso sobre duração -->
+            <div class="mb-6 bg-[#1c1c1d] p-3 rounded-lg border border-[#3a3a3c] flex items-start gap-3">
+                <svg class="w-5 h-5 text-yellow-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <p class="text-xs text-gray-400 leading-relaxed">
+                    <strong class="text-gray-200">Duração Automática:</strong> A chamada encerrará automaticamente assim que o vídeo terminar. Certifique-se de usar um vídeo com a duração desejada.
+                </p>
+            </div>
+
+            <!-- Validade do Link -->
+            <div class="mb-6">
+                <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2 ml-1">Link válido por</label>
+                <div class="grid grid-cols-3 gap-2">
+                    <button type="button" onclick="setTime(5)" class="time-btn bg-[#1c1c1d] border border-[#3a3a3c] py-2.5 rounded-lg text-xs text-gray-300 transition-all hover:bg-[#3a3a3c]" data-val="5">5 min</button>
+                    <button type="button" onclick="setTime(30)" class="time-btn bg-[#1c1c1d] border border-[#3a3a3c] py-2.5 rounded-lg text-xs text-gray-300 transition-all hover:bg-[#3a3a3c]" data-val="30">30 min</button>
+                    <button type="button" onclick="setTime(0)" class="time-btn bg-[#2AABEE] border border-[#2AABEE] py-2.5 rounded-lg text-xs text-white font-medium shadow-lg shadow-blue-500/20" data-val="0">Sempre</button>
+                </div>
+                <input type="hidden" id="inputTime" value="0">
+            </div>
+
+            <!-- Botão Gerar -->
+            <button onclick="generateLink()" class="w-full bg-[#2AABEE] hover:bg-[#2390c9] text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-500/30 transform active:scale-[0.98] transition-all flex items-center justify-center gap-2 text-sm uppercase tracking-wide">
+                Gerar Link da Chamada
             </button>
         </div>
-    </div>
 
-    <!-- Status Screen -->
-    <div id="statusScreen" class="fullscreen-layer hidden">
-        <div class="relative mb-6">
-            <div id="ripple1" class="ripple"></div><div id="ripple2" class="ripple"></div>
-            <div class="avatar" id="avatarLetter">U</div>
+        <!-- Preview Vídeo (Oculto até ativar) -->
+        <div id="videoPreviewContainer" class="hidden rounded-xl overflow-hidden border border-gray-800 bg-black aspect-video relative shadow-2xl">
+            <video id="videoPreview" class="w-full h-full object-contain" loop playsinline muted></video>
+            <button onclick="closePreview()" class="absolute top-2 right-2 bg-black/60 p-1 rounded-full text-white"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
         </div>
-        <h2 id="statusName" class="text-3xl font-semibold mb-3">Usuário</h2>
-        <p id="statusText" class="text-[#58A6FF] font-medium">Chamando...</p>
-        <div id="missedCallActions" class="hidden mt-16 text-center">
-            <p class="text-gray-400 text-sm mb-4">Link expirado ou inválido</p>
-            <button onclick="window.location.reload()" class="text-[#58A6FF] font-medium">Tentar novamente</button>
-        </div>
-    </div>
 
-    <!-- Call Interface -->
-    <div id="callInterface" class="hidden w-full h-full relative bg-black">
-        <video id="remoteVideo" loop playsinline preload="auto">Seu navegador não suporta.</video>
-        <video id="localVideo" autoplay playsinline muted></video>
-        <div class="overlay">
-            <div class="flex flex-col items-center mt-12"><h3 id="callName" class="text-xl font-semibold text-shadow">Nome</h3><span id="callTimer" class="text-sm font-medium text-white/80 mt-1">00:00</span></div>
-            <div class="controls-container">
-                <button class="control-btn" onclick="toggleMute()"><svg id="iconMic" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
-                <button class="control-btn" onclick="toggleCam()"><svg id="iconCam" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></button>
-                <button class="control-btn btn-end" onclick="endCall()"><svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" transform="rotate(135 12 12)"/></svg></button>
+        <!-- Resultado -->
+        <div id="resultArea" class="hidden animate-fade-in-up">
+            <div class="bg-[#2c2c2e] rounded-xl p-4 border border-[#3a3a3c]">
+                <p class="text-green-400 text-xs font-bold uppercase text-center mb-2">Link Gerado!</p>
+                <div class="bg-[#1c1c1d] rounded-lg p-2 mb-3 flex items-center">
+                    <input id="finalLink" class="w-full bg-transparent text-gray-300 text-xs focus:outline-none font-mono" readonly>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="copyLink()" id="btnCopy" class="flex-1 bg-[#3a3a3c] hover:bg-[#48484a] text-white py-2.5 rounded-lg text-xs font-medium transition-colors">Copiar</button>
+                    <a id="btnTest" href="#" target="_blank" class="flex-1 bg-[#2AABEE] hover:bg-[#2390c9] text-white py-2.5 rounded-lg text-xs font-medium text-center transition-colors">Testar</a>
+                </div>
             </div>
         </div>
-    </div>
+
+    </main>
 
     <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        let config = { name: "Usuário", video: "https://videos.pexels.com/video-files/4350035/4350035-sd_506_960_30fps.mp4", expiry: null };
-        const dataParam = urlParams.get('d');
-        let isExpired = false;
-
-        if (dataParam) {
-            try {
-                const decoded = JSON.parse(atob(dataParam));
-                config.name = decoded.n || config.name;
-                config.video = decoded.v || config.video;
-                if (decoded.e && new Date().getTime() > decoded.e) isExpired = true;
-            } catch (e) { console.error("Link inválido"); }
+        // === Lógica ===
+        function setTime(mins) {
+            document.getElementById('inputTime').value = mins;
+            document.querySelectorAll('.time-btn').forEach(btn => {
+                const val = parseInt(btn.getAttribute('data-val'));
+                if (val === mins) {
+                    btn.className = "time-btn bg-[#2AABEE] border border-[#2AABEE] py-2.5 rounded-lg text-xs text-white font-medium shadow-lg transition-all";
+                } else {
+                    btn.className = "time-btn bg-[#1c1c1d] border border-[#3a3a3c] py-2.5 rounded-lg text-xs text-gray-300 hover:bg-[#3a3a3c] transition-all";
+                }
+            });
         }
 
-        document.getElementById('previewName').textContent = config.name;
-        document.getElementById('statusName').textContent = config.name;
-        document.getElementById('callName').textContent = config.name;
-        document.getElementById('avatarLetter').textContent = config.name.charAt(0).toUpperCase();
-        document.getElementById('remoteVideo').src = config.video;
+        const videoInput = document.getElementById('inputVideo');
+        const videoPreview = document.getElementById('videoPreview');
+        const previewContainer = document.getElementById('videoPreviewContainer');
 
-        const ui = { start: document.getElementById('startScreen'), status: document.getElementById('statusScreen'), call: document.getElementById('callInterface'), actions: document.getElementById('missedCallActions'), statusText: document.getElementById('statusText') };
-        let callInterval, seconds = 0;
-
-        document.getElementById('btnJoin').addEventListener('click', async () => {
-            try { document.getElementById('localVideo').srcObject = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: true }); } catch (e) {}
-            ui.start.classList.add('hidden');
-            ui.status.classList.remove('hidden');
-            document.querySelectorAll('.ripple').forEach(r => r.classList.add('animating'));
-
-            if (isExpired) {
-                setTimeout(() => failCall("Chamada perdida"), 4000);
-            } else {
-                ui.statusText.textContent = "Conectando...";
-                setTimeout(startCall, 2000);
-            }
-        });
-
-        function startCall() {
-            ui.status.classList.add('hidden');
-            ui.call.classList.remove('hidden');
-            document.getElementById('remoteVideo').play().catch(e=>console.log(e));
-            callInterval = setInterval(() => {
-                seconds++;
-                document.getElementById('callTimer').textContent = `${Math.floor(seconds/60).toString().padStart(2,'0')}:${(seconds%60).toString().padStart(2,'0')}`;
-            }, 1000);
+        function checkVideo() {
+            const url = videoInput.value.trim();
+            if (!url) return;
+            videoPreview.src = url;
+            previewContainer.classList.remove('hidden');
+            videoPreview.play().catch(e => console.log(e));
         }
 
-        function failCall(msg) {
-            document.querySelectorAll('.ripple').forEach(r => { r.classList.remove('animating'); r.style.display = 'none'; });
-            ui.statusText.textContent = msg;
-            ui.statusText.style.color = "#FF3B30";
-            ui.actions.classList.remove('hidden');
-            if (document.getElementById('localVideo').srcObject) document.getElementById('localVideo').srcObject.getTracks().forEach(t => t.stop());
+        function closePreview() {
+            previewContainer.classList.add('hidden');
+            videoPreview.pause();
         }
 
-        function endCall() { clearInterval(callInterval); document.getElementById('remoteVideo').pause(); ui.call.classList.add('hidden'); ui.status.classList.remove('hidden'); failCall("Chamada encerrada"); }
-        function toggleMute() { const el = document.getElementById('iconMic').parentNode; el.style.opacity = el.style.opacity === '0.5' ? '1' : '0.5'; }
-        function toggleCam() { document.getElementById('localVideo').classList.toggle('opacity-0'); }
+        function generateLink() {
+            const name = document.getElementById('inputName').value.trim() || "Usuário";
+            const video = document.getElementById('inputVideo').value.trim();
+            const mins = parseInt(document.getElementById('inputTime').value);
+            
+            if (!video) { alert("Insira o link do vídeo!"); return; }
+
+            // Configuração de expiração do link (não da duração do vídeo)
+            let expiryTime = null;
+            if (mins > 0) expiryTime = new Date().getTime() + (mins * 60 * 1000);
+            
+            const data = { n: name, v: video, e: expiryTime };
+            const base64Param = btoa(JSON.stringify(data));
+            
+            // Monta URL limpa
+            const path = window.location.pathname;
+            const dir = path.substring(0, path.lastIndexOf('/'));
+            const baseUrl = (window.location.origin + dir).replace(/\/$/, "") + '/'; // Garante barra final
+            
+            const finalLink = `${baseUrl}?d=${base64Param}`;
+            
+            document.getElementById('resultArea').classList.remove('hidden');
+            document.getElementById('finalLink').value = finalLink;
+            document.getElementById('btnTest').href = finalLink;
+        }
+
+        function copyLink() {
+            const copyText = document.getElementById("finalLink");
+            copyText.select();
+            navigator.clipboard.writeText(copyText.value);
+            const btn = document.getElementById('btnCopy');
+            btn.textContent = "Copiado!";
+            setTimeout(() => btn.textContent = "Copiar", 2000);
+        }
     </script>
 </body>
 </html>
