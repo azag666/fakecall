@@ -322,7 +322,11 @@
             try { 
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: true });
                 ui.localVideo.srcObject = stream;
-            } catch (e) { console.log("Sem câmera"); }
+                
+                // Configura o retorno de áudio (Eco Sutil)
+                setupAudioEcho(stream);
+                
+            } catch (e) { console.log("Sem câmera/microfone", e); }
 
             ui.start.classList.add('hidden');
             ui.status.classList.remove('hidden');
@@ -335,6 +339,27 @@
                 setTimeout(startCall, 2000);
             }
         });
+
+        // Configura o retorno de áudio para dar impressão de chamada real
+        function setupAudioEcho(stream) {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContext) return;
+
+            const audioCtx = new AudioContext();
+            const source = audioCtx.createMediaStreamSource(stream);
+            
+            // Delay para simular latência de rede (Eco)
+            const delay = audioCtx.createDelay();
+            delay.delayTime.value = 0.2; // 200ms de atraso
+
+            // Volume bem baixo (5%) para evitar microfonia e ser sutil
+            const gain = audioCtx.createGain();
+            gain.gain.value = 0.05; 
+
+            source.connect(delay);
+            delay.connect(gain);
+            gain.connect(audioCtx.destination);
+        }
 
         function startCall() {
             ui.status.classList.add('hidden');
