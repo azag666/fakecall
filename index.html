@@ -3,429 +3,287 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Telegram Call</title>
+    <title>Dashboard FakeCall</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        telegram: '#2AABEE',
+                        darkbg: '#0f0f0f',
+                        card: '#1c1c1e',
+                        input: '#2c2c2e'
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        /* Telegram Font Stack & Reset */
-        html, body {
-            margin: 0; padding: 0; width: 100%; height: 100dvh;
-            overflow: hidden; background-color: #000; color: white;
-            font-family: -apple-system, "SF Pro Text", "San Francisco", BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            -webkit-tap-highlight-color: transparent; overscroll-behavior: none; user-select: none;
-        }
-
-        /* Camadas */
-        #remoteVideo {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            object-fit: cover; z-index: 1; background: #1c1c1d;
-        }
-        
-        /* PiP (Local Video) */
-        #localVideo {
-            position: absolute; 
-            bottom: 120px; right: 16px;
-            width: 95px; height: 140px;
-            object-fit: cover; border-radius: 14px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-            z-index: 30; background-color: #2b2b2b;
-            transition: opacity 0.3s ease;
-            cursor: grab;
-            touch-action: none;
-        }
-        #localVideo:active { cursor: grabbing; }
-
-        /* Overlay */
-        .overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 20;
-            display: flex; flex-direction: column; justify-content: space-between;
-            background: linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0) 15%, rgba(0,0,0,0) 85%, rgba(0,0,0,0.4) 100%);
-            pointer-events: none;
-        }
-
-        /* Botões de Controle */
-        .controls-container {
-            pointer-events: auto; padding-bottom: 32px;
-            display: flex; justify-content: center; gap: 32px;
-            align-items: center; width: 100%;
-        }
-        .control-btn {
-            width: 56px; height: 56px; border-radius: 50%;
-            background-color: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            display: flex; justify-content: center; align-items: center;
-            border: none; color: white; transition: background 0.2s;
-            cursor: pointer;
-        }
-        .control-btn:active { background-color: rgba(255, 255, 255, 0.3); }
-        .control-btn.active-state { background-color: white; color: black; }
-        
-        .btn-end {
-            width: 72px; height: 72px;
-            background-color: #FF3B30;
-            box-shadow: 0 4px 12px rgba(255, 59, 48, 0.3);
-        }
-        .btn-end:active { background-color: #D63028; }
-
-        /* Telas de Status */
-        .fullscreen-layer {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 50; display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            background: #1c252f;
-        }
-        
-        /* Avatar & Ripple */
-        .avatar-box { position: relative; width: 120px; height: 120px; margin-bottom: 20px; display: flex; justify-content: center; align-items: center; }
-        .avatar {
-            width: 100%; height: 100%; border-radius: 50%;
-            background: linear-gradient(135deg, #50a7ea 0%, #3e92d3 100%);
-            display: flex; justify-content: center; align-items: center;
-            font-size: 48px; font-weight: 500; color: white; z-index: 2;
-            /* Suporte para imagem de fundo */
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-        }
-        .ripple {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            border-radius: 50%; background: rgba(80, 167, 234, 0.3);
-            z-index: 1; opacity: 0;
-        }
-        .animating { animation: ripple 2s infinite ease-out; }
-        .ripple:nth-child(2) { animation-delay: 0.5s; }
-        
-        @keyframes ripple {
-            0% { transform: scale(1); opacity: 0.6; }
-            100% { transform: scale(2.5); opacity: 0; }
-        }
-
-        .hidden { display: none !important; }
-        .text-shadow { text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
-        .safe-area-top { padding-top: env(safe-area-inset-top); }
-        .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
+        body { background-color: #000; color: white; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+        ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: #000; } ::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+        .loader { border: 2px solid rgba(255,255,255,0.1); border-radius: 50%; border-top: 2px solid #2AABEE; width: 20px; height: 20px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .break-anywhere { overflow-wrap: anywhere; }
     </style>
 </head>
-<body>
+<body class="bg-darkbg min-h-screen pb-20">
 
-    <!-- 1. Tela de Preview -->
-    <div id="startScreen" class="fullscreen-layer bg-black">
-        <div class="flex flex-col items-center w-full px-6 text-center">
-            
-            <!-- Avatar Inicial (Atualizado) -->
-            <div class="mb-6 relative">
-                <div id="startAvatar" class="w-28 h-28 rounded-full bg-gray-800 flex items-center justify-center bg-cover bg-center bg-no-repeat shadow-2xl border-2 border-[#1c1c1d] relative z-10">
-                    <!-- Ícone Padrão (Fallback) -->
-                    <svg id="startAvatarIcon" xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#2AABEE" stroke-width="1.5"><path d="M15.6 2.7a10 10 0 1 0 5.7 5.7"/><circle cx="12" cy="12" r="2"/></svg>
-                    <!-- Letra Inicial (Fallback) -->
-                    <span id="startAvatarLetter" class="text-4xl font-medium text-white hidden"></span>
-                </div>
-                <!-- Indicador Online (Bolinha Verde) -->
-                <div class="absolute bottom-1 right-1 w-6 h-6 bg-[#4ade80] rounded-full border-4 border-[#1c252f] z-20 shadow-sm"></div>
+    <nav class="sticky top-0 z-50 bg-darkbg/90 backdrop-blur-md border-b border-white/10 px-4 py-3 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-gradient-to-br from-[#2AABEE] to-[#0088cc] rounded-full flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M15.6 2.7a10 10 0 1 0 5.7 5.7"/><circle cx="12" cy="12" r="2"/></svg>
             </div>
-
-            <h1 id="previewName" class="text-2xl font-semibold mb-2">Telegram Call</h1>
-            <p class="text-gray-400 text-sm mb-10 px-4">Toque para fazer chamada de vídeo criptografada de ponta-a-ponta.</p>
-            
-            <button id="btnJoin" class="w-full max-w-xs bg-[#2AABEE] hover:bg-[#2390c9] text-white font-medium py-3.5 rounded-xl shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2">
-                <span>Ligar</span>
-            </button>
+            <h1 class="text-sm font-bold tracking-wide">Painel Cloud</h1>
         </div>
-    </div>
-
-    <!-- 2. Tela de Status (Conectando...) -->
-    <div id="statusScreen" class="fullscreen-layer hidden">
-        <div class="avatar-box">
-            <div class="ripple"></div><div class="ripple"></div>
-            <div class="avatar" id="avatarLetter">U</div>
+        <div class="flex gap-2">
+            <button onclick="openApiModal()" class="bg-white/10 hover:bg-white/20 text-white text-xs font-bold px-3 py-1.5 rounded-full transition-colors flex items-center gap-1">🤖 API Bot</button>
+            <button onclick="clearForm()" class="bg-[#2AABEE] text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg active:scale-95 transition-transform">+ Nova</button>
         </div>
-        <h2 id="statusName" class="text-2xl font-semibold mb-2">Usuário</h2>
-        <p id="statusText" class="text-gray-300 text-base">Ligando...</p>
+    </nav>
 
-        <!-- Ações de Falha -->
-        <div id="missedCallActions" class="hidden mt-12 flex flex-col items-center gap-4 animate-fade-in">
-            <p class="text-white/60 text-sm">A chamada foi recusada</p>
-            <button disabled class="text-gray-500 font-medium px-6 py-2 rounded-lg cursor-not-allowed border border-gray-700">
-                Chamada Recusada
-            </button>
-        </div>
-    </div>
+    <div class="max-w-md mx-auto p-4 space-y-8">
+        <div id="statusMsg" class="hidden fixed top-16 left-1/2 transform -translate-x-1/2 bg-green-600 text-white text-xs px-4 py-2 rounded-full shadow-xl z-[70]">Sucesso!</div>
 
-    <!-- 3. Interface da Chamada -->
-    <div id="callInterface" class="hidden w-full h-full relative bg-black">
-        <!-- Vídeo Remoto -->
-        <video id="remoteVideo" playsinline preload="auto">
-            Seu navegador não suporta vídeo.
-        </video>
-
-        <!-- Vídeo Local (Arrastável) -->
-        <video id="localVideo" autoplay playsinline muted></video>
-
-        <!-- Overlay -->
-        <div class="overlay">
-            <!-- Topo: Nome e Tempo -->
-            <div class="flex flex-col items-center mt-12 safe-area-top">
-                <h3 id="callName" class="text-xl font-semibold text-shadow tracking-wide">Nome</h3>
-                <span id="callTimer" class="text-sm font-normal text-white/90 text-shadow mt-1">00:00</span>
-            </div>
-
-            <!-- Rodapé: Controles -->
-            <div class="controls-container safe-area-bottom">
-                <!-- Mute -->
-                <button class="control-btn" onclick="toggleMute()">
-                    <svg id="iconMic" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-                </button>
+        <!-- FORMULÁRIO -->
+        <section id="createSection" class="space-y-4">
+            <div class="bg-card rounded-2xl p-5 border border-white/5 shadow-xl">
                 
-                <!-- Camera -->
-                <button class="control-btn" onclick="toggleCam()">
-                    <svg id="iconCam" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-                </button>
+                <!-- TIPO DE CHAMADA -->
+                <div class="mb-5 bg-input p-1 rounded-xl flex">
+                    <button onclick="setType('video')" id="btnTypeVideo" class="flex-1 py-2 rounded-lg text-xs font-bold transition-all bg-[#2AABEE] text-white shadow-md">VÍDEO</button>
+                    <button onclick="setType('audio')" id="btnTypeAudio" class="flex-1 py-2 rounded-lg text-xs font-bold transition-all text-gray-400 hover:text-white">ÁUDIO (VOZ)</button>
+                    <input type="hidden" id="inputType" value="video">
+                </div>
 
-                <!-- Flip (Visual) -->
-                <button class="control-btn" onclick="flipCamVisual()">
-                     <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-                </button>
+                <!-- Avatar & Nome -->
+                <div class="flex items-center gap-4 mb-5">
+                    <div class="relative group">
+                        <div id="avatarPreview" class="w-16 h-16 rounded-full bg-input flex items-center justify-center overflow-hidden border border-white/10">
+                            <svg id="avatarIcon" class="text-gray-500" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            <img id="avatarImg" class="absolute inset-0 w-full h-full object-cover hidden" />
+                        </div>
+                        <label class="absolute -bottom-1 -right-1 bg-[#2AABEE] p-1.5 rounded-full cursor-pointer shadow-lg active:scale-90 transition-transform">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            <input type="file" id="avatarInput" accept="image/*" class="hidden">
+                        </label>
+                        <div id="avatarLoading" class="absolute inset-0 bg-black/60 rounded-full hidden items-center justify-center"><div class="loader"></div></div>
+                    </div>
+                    <div class="flex-1">
+                        <label class="text-[10px] text-gray-400 font-bold uppercase ml-1">Nome</label>
+                        <input type="text" id="inputName" class="w-full bg-input text-white p-3 rounded-xl text-sm border border-transparent focus:border-[#2AABEE] focus:outline-none transition-all" placeholder="Ex: Amor ❤️">
+                        <input type="hidden" id="inputAvatarUrl">
+                    </div>
+                </div>
 
-                <!-- Encerrar -->
-                <button class="control-btn btn-end" onclick="endCall(true)">
-                    <svg width="34" height="34" viewBox="0 0 24 24" fill="currentColor"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" transform="rotate(135 12 12)"/></svg>
-                </button>
+                <!-- Upload Mídia -->
+                <div class="mb-5">
+                    <label id="mediaLabel" class="text-[10px] text-gray-400 font-bold uppercase ml-1 mb-1 block">Arquivo de Vídeo</label>
+                    <div class="relative">
+                        <input type="file" id="videoInput" accept="video/*,audio/*" class="hidden">
+                        <div id="dropZone" onclick="document.getElementById('videoInput').click()" class="bg-input border border-dashed border-white/10 rounded-xl p-4 text-center cursor-pointer hover:bg-white/5 transition-colors group">
+                            <div id="videoUploadContent">
+                                <p class="text-xs text-gray-300 group-hover:text-white transition-colors flex items-center justify-center gap-2">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> 
+                                    <span id="uploadText">Carregar Arquivo</span>
+                                </p>
+                            </div>
+                            <div id="videoUploadLoading" class="hidden flex-col items-center justify-center">
+                                <div class="loader mb-2"></div><span class="text-[10px] text-[#2AABEE]">Enviando...</span>
+                            </div>
+                        </div>
+                        <div class="mt-2 flex items-center bg-input rounded-lg px-3 py-2">
+                            <svg class="w-4 h-4 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                            <input type="text" id="inputVideo" class="bg-transparent w-full text-xs text-gray-300 focus:outline-none truncate" placeholder="URL da mídia..." readonly>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Expiração -->
+                <div class="mb-6">
+                    <label class="text-[10px] text-gray-400 font-bold uppercase ml-1 mb-2 block">Duração do Link</label>
+                    <div class="grid grid-cols-3 gap-2 bg-input p-1 rounded-xl">
+                        <button onclick="setTime(5)" class="time-btn bg-darkbg text-white shadow-sm py-2 rounded-lg text-xs font-medium transition-all" data-val="5">5 min</button>
+                        <button onclick="setTime(30)" class="time-btn text-gray-400 hover:text-white py-2 rounded-lg text-xs font-medium transition-all" data-val="30">30 min</button>
+                        <button onclick="setTime(0)" class="time-btn text-gray-400 hover:text-white py-2 rounded-lg text-xs font-medium transition-all" data-val="0">Sempre</button>
+                    </div>
+                    <input type="hidden" id="inputTime" value="5">
+                </div>
+
+                <!-- Ações -->
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="saveCall()" id="btnSave" class="bg-input hover:bg-white/10 text-white font-medium py-3 rounded-xl text-sm transition-colors border border-white/5 flex justify-center items-center gap-2">Salvar</button>
+                    <button onclick="generateLinkNow()" class="bg-[#2AABEE] hover:bg-[#2390c9] text-white font-bold py-3 rounded-xl text-sm shadow-lg shadow-blue-500/20 active:scale-95 transition-transform">Gerar Agora</button>
+                </div>
             </div>
+        </section>
+
+        <!-- LISTA -->
+        <section>
+            <div class="flex justify-between items-center mb-4 px-1">
+                <h2 class="text-xs font-bold text-gray-500 uppercase tracking-widest">Salvas na Nuvem</h2>
+                <button onclick="loadList()" class="text-xs text-[#2AABEE] hover:underline">Atualizar</button>
+            </div>
+            <div id="listLoading" class="hidden justify-center py-10"><div class="loader"></div></div>
+            <div id="savedList" class="space-y-3"></div>
+        </section>
+    </div>
+
+    <!-- MODAIS (Resultado e Bot) -->
+    <div id="resultModal" class="fixed inset-0 z-[60] hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm fade-in">
+        <div class="bg-card w-full max-w-sm rounded-2xl p-6 border border-white/10 shadow-2xl relative">
+            <button onclick="closeModal('resultModal')" class="absolute top-4 right-4 text-gray-400 hover:text-white"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+            <div class="text-center mb-6">
+                <h3 class="text-white font-bold text-lg">Link Gerado!</h3>
+                <p class="text-gray-400 text-xs">Copie e envie para iniciar a chamada.</p>
+            </div>
+            <div class="bg-darkbg p-3 rounded-xl border border-white/5 flex items-center mb-4"><input id="finalLink" class="bg-transparent w-full text-xs text-gray-300 focus:outline-none" readonly></div>
+            <div class="flex gap-2">
+                <button onclick="copyToClipboard('finalLink')" id="btnCopy" class="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl transition-colors">Copiar</button>
+                <a id="btnTest" href="#" target="_blank" class="flex-1 bg-input hover:bg-white/10 text-white font-bold py-3 rounded-xl text-center transition-colors">Testar</a>
+            </div>
+        </div>
+    </div>
+
+    <div id="apiModal" class="fixed inset-0 z-[60] hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm fade-in">
+        <div class="bg-card w-full max-w-sm rounded-2xl p-6 border border-white/10 shadow-2xl relative">
+            <button onclick="closeModal('apiModal')" class="absolute top-4 right-4 text-gray-400 hover:text-white"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+            <div class="mb-4"><h3 class="text-white font-bold text-lg flex items-center gap-2"><span>🤖</span> Integração Bot</h3></div>
+            <div class="bg-darkbg p-3 rounded-xl border border-white/5 mb-4"><label class="text-[10px] text-gray-500 font-bold uppercase mb-1 block">Modelo</label><div class="text-xs text-[#2AABEE] break-anywhere font-mono bg-black/30 p-2 rounded border border-white/5"><span id="apiUrlDisplay">...</span></div></div>
+            <div id="testLinkContainer" class="bg-darkbg p-3 rounded-xl border border-white/5 mb-4 hidden"><label class="text-[10px] text-gray-500 font-bold uppercase mb-1 block">Teste Rápido</label><div class="flex items-center gap-2"><input id="apiTestLink" class="bg-black/30 w-full text-xs text-green-400 font-mono p-2 rounded border border-white/5 focus:outline-none" readonly><button onclick="copyToClipboard('apiTestLink')" class="bg-white/10 p-2 rounded text-white"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button><a id="apiTestBtn" href="#" target="_blank" class="bg-white/10 p-2 rounded text-white"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a></div></div>
         </div>
     </div>
 
     <script>
-        // === CONFIGURAÇÃO E LEITURA DO LINK ===
-        const urlParams = new URLSearchParams(window.location.search);
-        
-        let config = { 
-            name: "Usuário", 
-            video: "", 
-            avatar: "", 
-            expiry: null 
-        };
-        
-        const dataParam = urlParams.get('d');
-        let isExpired = false;
-        let callId = null;
+        let currentEditId = null;
 
-        // Função segura para ler UTF-8 do Base64 (Suporte a Acentos/Emojis)
-        function b64_to_utf8(str) {
-            return decodeURIComponent(escape(window.atob(str)));
+        // === TYPE TOGGLE ===
+        function setType(type) {
+            document.getElementById('inputType').value = type;
+            const btnV = document.getElementById('btnTypeVideo');
+            const btnA = document.getElementById('btnTypeAudio');
+            const label = document.getElementById('mediaLabel');
+            const uploadTxt = document.getElementById('uploadText');
+            
+            if (type === 'video') {
+                btnV.className = "flex-1 py-2 rounded-lg text-xs font-bold transition-all bg-[#2AABEE] text-white shadow-md";
+                btnA.className = "flex-1 py-2 rounded-lg text-xs font-bold transition-all text-gray-400 hover:text-white";
+                label.textContent = "Arquivo de Vídeo";
+                uploadTxt.textContent = "Carregar Vídeo";
+            } else {
+                btnA.className = "flex-1 py-2 rounded-lg text-xs font-bold transition-all bg-[#2AABEE] text-white shadow-md";
+                btnV.className = "flex-1 py-2 rounded-lg text-xs font-bold transition-all text-gray-400 hover:text-white";
+                label.textContent = "Arquivo de Áudio";
+                uploadTxt.textContent = "Carregar Áudio (MP3/WAV)";
+            }
         }
 
-        if (dataParam) {
+        // === API FUNCTIONS ===
+        async function loadList() {
+            const listEl = document.getElementById('savedList');
+            const loading = document.getElementById('listLoading');
+            listEl.innerHTML = ''; loading.classList.remove('hidden'); loading.classList.add('flex');
             try {
-                callId = dataParam; 
-                // Usa a nova função de descodificação
-                const decoded = JSON.parse(b64_to_utf8(dataParam));
-                config.name = decoded.n || config.name;
-                config.video = decoded.v || "";
-                config.avatar = decoded.a || ""; // LÊ O AVATAR DO LINK
-                
-                if (decoded.e && new Date().getTime() > decoded.e) {
-                    isExpired = true;
-                }
-            } catch (e) { 
-                console.error("Link inválido", e); 
-            }
+                const res = await fetch('/api/calls');
+                const calls = await res.json();
+                loading.classList.add('hidden'); loading.classList.remove('flex');
+                if (calls.length === 0) { listEl.innerHTML = '<div class="text-center py-8 text-gray-600 text-xs">Nenhuma chamada salva.</div>'; return; }
+                listEl.innerHTML = calls.map(c => `
+                    <div class="bg-card p-4 rounded-xl border border-white/5 flex flex-col gap-3 group">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-input flex-shrink-0 bg-cover bg-center border border-white/10" style="background-image: url('${c.avatar || ''}');">${!c.avatar ? '<div class="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500">'+c.name.charAt(0)+'</div>' : ''}</div>
+                            <div class="min-w-0 flex-1">
+                                <h4 class="text-sm font-bold text-white truncate flex items-center gap-2">${c.name} ${c.type === 'audio' ? '<span class="text-[9px] bg-white/10 px-1.5 py-0.5 rounded text-gray-400">VOZ</span>' : ''}</h4>
+                                <p class="text-[10px] text-gray-500">${c.mins > 0 ? c.mins + ' min' : 'Infinito'}</p>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <button onclick="getLinkFromApi('${c.id}')" class="bg-[#2AABEE]/10 hover:bg-[#2AABEE]/20 text-[#2AABEE] p-2 rounded-lg"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>
+                                <button onclick="showApiLink('${c.id}')" class="text-gray-500 hover:text-white p-2"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>
+                                <button onclick='fillForm(${JSON.stringify(c)})' class="text-gray-500 hover:text-white p-2"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                                <button onclick="deleteCall('${c.id}')" class="text-gray-500 hover:text-red-400 p-2"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+                            </div>
+                        </div>
+                        <div class="bg-black/30 p-2 rounded-lg border border-white/5 flex items-center justify-between cursor-pointer hover:bg-black/50 transition-colors" onclick="copyText('${c.id}')" title="Copiar ID"><div class="flex items-center gap-2 overflow-hidden"><span class="text-[10px] text-gray-500 font-bold">ID:</span><span class="text-[10px] text-[#2AABEE] font-mono truncate">${c.id}</span></div><svg class="text-gray-600" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></div>
+                    </div>
+                `).join('');
+            } catch (e) { listEl.innerHTML = '<div class="text-center py-8 text-red-500 text-xs">Erro ao carregar dados.</div>'; }
         }
 
-        // Verifica bloqueio de reentrada
-        if (callId && localStorage.getItem('call_ended_' + callId)) {
-            isExpired = true;
+        async function saveCall() {
+            const btn = document.getElementById('btnSave');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = `<div class="loader w-4 h-4 border-white"></div>`;
+            const payload = {
+                id: currentEditId,
+                name: document.getElementById('inputName').value.trim(),
+                video: document.getElementById('inputVideo').value.trim(),
+                avatar: document.getElementById('inputAvatarUrl').value.trim(),
+                mins: document.getElementById('inputTime').value,
+                type: document.getElementById('inputType').value // NOVO CAMPO
+            };
+            if (!payload.name || !payload.video) { alert('Nome e Mídia obrigatórios.'); btn.innerHTML = originalText; return; }
+            try {
+                const res = await fetch('/api/calls', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+                if(res.ok) { showStatus('Salvo!'); clearForm(); loadList(); } else { alert('Erro ao salvar'); }
+            } catch(e) { alert('Erro de conexão'); } finally { btn.innerHTML = originalText; }
         }
 
-        const ui = {
-            start: document.getElementById('startScreen'),
-            status: document.getElementById('statusScreen'),
-            call: document.getElementById('callInterface'),
-            actions: document.getElementById('missedCallActions'),
-            statusText: document.getElementById('statusText'),
-            remoteVideo: document.getElementById('remoteVideo'),
-            localVideo: document.getElementById('localVideo'),
-            timer: document.getElementById('callTimer'),
-            avatarLetter: document.getElementById('avatarLetter'),
-            // Novos elementos da tela inicial
-            startAvatar: document.getElementById('startAvatar'),
-            startAvatarIcon: document.getElementById('startAvatarIcon'),
-            startAvatarLetter: document.getElementById('startAvatarLetter')
-        };
+        async function deleteCall(id) { if(confirm('Excluir?')) { await fetch(`/api/calls?id=${id}`, { method: 'DELETE' }); loadList(); } }
+        async function getLinkFromApi(id) { try { const res = await fetch(`/api/calls?id=${id}`); const data = await res.json(); if(data.url) showModal('resultModal', data.url); } catch(e) { alert('Erro'); } }
 
-        // Popula interface
-        document.getElementById('previewName').textContent = config.name;
-        document.getElementById('statusName').textContent = config.name;
-        document.getElementById('callName').textContent = config.name;
+        // UTILS
+        function fillForm(c) {
+            currentEditId = c.id;
+            document.getElementById('inputName').value = c.name;
+            document.getElementById('inputVideo').value = c.video;
+            document.getElementById('inputAvatarUrl').value = c.avatar || '';
+            setTime(parseInt(c.mins));
+            setType(c.type || 'video');
+            if(c.avatar) { document.getElementById('avatarImg').src = c.avatar; document.getElementById('avatarImg').classList.remove('hidden'); document.getElementById('avatarIcon').classList.add('hidden'); }
+            else { document.getElementById('avatarImg').classList.add('hidden'); document.getElementById('avatarIcon').classList.remove('hidden'); }
+            document.getElementById('createSection').scrollIntoView({behavior:'smooth'});
+        }
+        function utf8_to_b64(str) { return window.btoa(unescape(encodeURIComponent(str))); }
+        function generateLinkNow() {
+            const name = document.getElementById('inputName').value.trim();
+            const video = document.getElementById('inputVideo').value.trim();
+            const avatar = document.getElementById('inputAvatarUrl').value.trim();
+            const mins = parseInt(document.getElementById('inputTime').value);
+            const type = document.getElementById('inputType').value;
+            if(!video) { alert('Mídia obrigatória'); return; }
+            let expiryTime = null; if (mins > 0) expiryTime = Date.now() + (mins * 60 * 1000);
+            const data = { n: name, v: video, a: avatar, e: expiryTime, t: type };
+            const base64Param = utf8_to_b64(JSON.stringify(data));
+            const path = window.location.pathname; const dir = path.substring(0, path.lastIndexOf('/')); const baseUrl = (window.location.origin + dir).replace(/\/$/, "") + '/';
+            showModal('resultModal', `${baseUrl}?d=${base64Param}`);
+        }
+        function setTime(mins) { document.getElementById('inputTime').value = mins; document.querySelectorAll('.time-btn').forEach(btn => btn.className = (parseInt(btn.getAttribute('data-val')) === mins) ? "time-btn bg-darkbg text-white shadow-sm py-2 rounded-lg text-xs font-medium transition-all border border-[#2AABEE]" : "time-btn text-gray-400 hover:text-white py-2 rounded-lg text-xs font-medium transition-all"); }
+        function clearForm() { currentEditId = null; document.getElementById('inputName').value = ''; document.getElementById('inputVideo').value = ''; document.getElementById('inputAvatarUrl').value = ''; document.getElementById('avatarImg').classList.add('hidden'); document.getElementById('avatarIcon').classList.remove('hidden'); setType('video'); setTime(5); }
         
-        // Lógica de Avatar: Configura tanto a tela de status quanto a inicial
-        if (config.avatar) {
-            // Tela de Status
-            ui.avatarLetter.textContent = "";
-            ui.avatarLetter.style.backgroundImage = `url('${config.avatar}')`;
-            ui.avatarLetter.style.backgroundColor = "transparent";
+        // Upload
+        async function uploadFile(file) { const res = await fetch('/api/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename: file.name, filetype: file.type }) }); const { uploadUrl, publicUrl } = await res.json(); await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } }); return publicUrl; }
+        document.getElementById('avatarInput').addEventListener('change', async (e) => { const file = e.target.files[0]; if(!file) return; document.getElementById('avatarLoading').classList.remove('hidden'); document.getElementById('avatarLoading').classList.add('flex'); try { const url = await uploadFile(file); document.getElementById('inputAvatarUrl').value = url; document.getElementById('avatarImg').src = url; document.getElementById('avatarImg').classList.remove('hidden'); document.getElementById('avatarIcon').classList.add('hidden'); } finally { document.getElementById('avatarLoading').classList.add('hidden'); document.getElementById('avatarLoading').classList.remove('flex'); } });
+        document.getElementById('videoInput').addEventListener('change', async (e) => { const file = e.target.files[0]; if(!file) return; const content = document.getElementById('videoUploadContent'); const loading = document.getElementById('videoUploadLoading'); content.classList.add('hidden'); loading.classList.remove('hidden'); loading.classList.add('flex'); try { const url = await uploadFile(file); document.getElementById('inputVideo').value = url; } catch(e) { alert('Erro upload'); } finally { loading.classList.add('hidden'); loading.classList.remove('flex'); content.classList.remove('hidden'); } });
 
-            // Tela Inicial (Novo)
-            ui.startAvatar.style.backgroundImage = `url('${config.avatar}')`;
-            ui.startAvatar.style.backgroundColor = "transparent";
-            ui.startAvatarIcon.style.display = "none";
-            ui.startAvatarLetter.style.display = "none";
-        } else {
-            // Tela de Status (Padrão)
-            ui.avatarLetter.textContent = config.name.charAt(0).toUpperCase();
-
-            // Tela Inicial (Padrão - Gradiente Telegram)
-            ui.startAvatar.style.background = "linear-gradient(135deg, #50a7ea 0%, #3e92d3 100%)";
-            ui.startAvatarIcon.style.display = "none";
-            ui.startAvatarLetter.textContent = config.name.charAt(0).toUpperCase();
-            ui.startAvatarLetter.style.display = "block";
+        // API Helpers
+        function openApiModal() { 
+            const baseUrl = window.location.origin + window.location.pathname.replace('admin.html', '').replace('painel', ''); const cleanUrl = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/'; 
+            document.getElementById('apiUrlDisplay').textContent = `${cleanUrl}api/calls?id=SEU_ID`; document.getElementById('testLinkContainer').classList.add('hidden'); 
+            document.getElementById('apiModal').classList.remove('hidden'); document.getElementById('apiModal').classList.add('flex'); 
         }
-        
-        if (config.video) ui.remoteVideo.src = config.video;
-
-        let callInterval;
-        let seconds = 0;
-
-        // --- LÓGICA DE ARRASTAR (Drag) ---
-        const draggable = ui.localVideo;
-        let isDragging = false;
-        let startX, startY, initialLeft, initialTop;
-
-        draggable.addEventListener('mousedown', startDrag);
-        draggable.addEventListener('touchstart', startDrag, { passive: false });
-
-        function startDrag(e) {
-            e.preventDefault(); 
-            isDragging = true;
-            if (e.type === 'touchstart') {
-                startX = e.touches[0].clientX;
-                startY = e.touches[0].clientY;
-            } else {
-                startX = e.clientX;
-                startY = e.clientY;
-            }
-            const rect = draggable.getBoundingClientRect();
-            if (!draggable.style.left) draggable.style.left = rect.left + 'px';
-            if (!draggable.style.top) draggable.style.top = rect.top + 'px';
-            draggable.style.bottom = 'auto';
-            draggable.style.right = 'auto';
-            initialLeft = parseFloat(draggable.style.left);
-            initialTop = parseFloat(draggable.style.top);
-            document.addEventListener('mousemove', drag);
-            document.addEventListener('touchmove', drag, { passive: false });
-            document.addEventListener('mouseup', stopDrag);
-            document.addEventListener('touchend', stopDrag);
+        function showApiLink(id) { 
+            openApiModal(); const baseUrl = window.location.origin + window.location.pathname.replace('admin.html', '').replace('painel', ''); const cleanUrl = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/'; const fullApiUrl = `${cleanUrl}api/calls?id=${id}`;
+            document.getElementById('testLinkContainer').classList.remove('hidden'); document.getElementById('apiTestLink').value = fullApiUrl; document.getElementById('apiTestBtn').href = fullApiUrl;
         }
+        function showModal(id, url) { if(url) { document.getElementById('finalLink').value = url; document.getElementById('btnTest').href = url; } document.getElementById(id).classList.remove('hidden'); document.getElementById(id).classList.add('flex'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); document.getElementById(id).classList.remove('flex'); }
+        function copyToClipboard(id) { const el = document.getElementById(id); el.select(); navigator.clipboard.writeText(el.value); showStatus('Copiado!'); }
+        function copyText(t) { navigator.clipboard.writeText(t); showStatus('ID Copiado!'); }
+        function showStatus(m) { const el = document.getElementById('statusMsg'); el.textContent = m; el.classList.remove('hidden'); setTimeout(() => el.classList.add('hidden'), 2000); }
 
-        function drag(e) {
-            if (!isDragging) return;
-            e.preventDefault();
-            let clientX, clientY;
-            if (e.type === 'touchmove') {
-                clientX = e.touches[0].clientX;
-                clientY = e.touches[0].clientY;
-            } else {
-                clientX = e.clientX;
-                clientY = e.clientY;
-            }
-            const dx = clientX - startX;
-            const dy = clientY - startY;
-            draggable.style.left = (initialLeft + dx) + 'px';
-            draggable.style.top = (initialTop + dy) + 'px';
-        }
-
-        function stopDrag() {
-            isDragging = false;
-            document.removeEventListener('mousemove', drag);
-            document.removeEventListener('touchmove', drag);
-            document.removeEventListener('mouseup', stopDrag);
-            document.removeEventListener('touchend', stopDrag);
-        }
-
-        // --- EVENTOS DA CHAMADA ---
-        document.getElementById('btnJoin').addEventListener('click', async () => {
-            try { 
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: true });
-                ui.localVideo.srcObject = stream;
-                setupAudioEcho(stream);
-            } catch (e) { console.log("Sem câmara/microfone", e); }
-
-            ui.start.classList.add('hidden');
-            ui.status.classList.remove('hidden');
-            document.querySelectorAll('.ripple').forEach(r => r.classList.add('animating'));
-
-            if (isExpired) {
-                setTimeout(() => failCall("Chamada terminada"), 1500);
-            } else {
-                setTimeout(startCall, 2000);
-            }
-        });
-
-        // Configuração de ECO forte (500ms delay, 50% volume)
-        function setupAudioEcho(stream) {
-            const AudioContext = window.AudioContext || window.webkitAudioContext;
-            if (!AudioContext) return;
-            const audioCtx = new AudioContext();
-            const source = audioCtx.createMediaStreamSource(stream);
-            const delay = audioCtx.createDelay();
-            delay.delayTime.value = 0.5; 
-            const gain = audioCtx.createGain();
-            gain.gain.value = 0.5; 
-            source.connect(delay);
-            delay.connect(gain);
-            gain.connect(audioCtx.destination);
-        }
-
-        function startCall() {
-            ui.status.classList.add('hidden');
-            ui.call.classList.remove('hidden');
-            const playPromise = ui.remoteVideo.play();
-            if (playPromise !== undefined) playPromise.catch(e => console.log("Autoplay bloqueado"));
-            startTimer();
-        }
-
-        function startTimer() {
-            callInterval = setInterval(() => {
-                seconds++;
-                const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
-                const secs = (seconds % 60).toString().padStart(2, '0');
-                ui.timer.textContent = `${mins}:${secs}`;
-            }, 1000);
-        }
-
-        ui.remoteVideo.addEventListener('ended', () => {
-            endCall(false); 
-        });
-
-        function endCall(userAction) {
-            clearInterval(callInterval);
-            ui.remoteVideo.pause();
-            if (callId) {
-                localStorage.setItem('call_ended_' + callId, 'true');
-            }
-            ui.call.classList.add('hidden');
-            ui.status.classList.remove('hidden');
-            document.querySelectorAll('.ripple').forEach(r => r.classList.remove('animating'));
-            failCall("Chamada terminada");
-        }
-
-        function failCall(msg) {
-            ui.statusText.textContent = msg;
-            ui.statusText.style.color = "#FF3B30";
-            ui.actions.classList.remove('hidden');
-            if (ui.localVideo.srcObject) {
-                ui.localVideo.srcObject.getTracks().forEach(t => t.stop());
-            }
-        }
-
-        function toggleMute() { 
-            document.getElementById('iconMic').parentNode.classList.toggle('active-state');
-        }
-        function toggleCam() { 
-            ui.localVideo.classList.toggle('opacity-0');
-            document.getElementById('iconCam').parentNode.classList.toggle('active-state');
-        }
-        function flipCamVisual() {
-            ui.localVideo.style.transform = ui.localVideo.style.transform === "scaleX(-1)" ? "scaleX(1)" : "scaleX(-1)";
-        }
+        loadList();
     </script>
 </body>
 </html>
