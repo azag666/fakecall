@@ -1,6 +1,6 @@
-const { S3Client, PutObjectCommand, GetObjectCommand } = require("@aws-sdk/client-s3");
+import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 
-// Configuração do Cliente R2 (Reutilizando suas variáveis)
+// Configuração do Cliente R2
 const S3 = new S3Client({
   region: "auto",
   endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
@@ -11,9 +11,9 @@ const S3 = new S3Client({
 });
 
 const BUCKET_NAME = process.env.R2_BUCKET_NAME;
-const DB_FILE = 'calls_db.json'; // Arquivo onde salvaremos as configurações
+const DB_FILE = 'calls_db.json'; // Arquivo único que guarda todas as chamadas
 
-// Helper: Ler o banco de dados do R2
+// Helper: Ler o banco de dados
 async function getDB() {
   try {
     const command = new GetObjectCommand({ Bucket: BUCKET_NAME, Key: DB_FILE });
@@ -21,8 +21,7 @@ async function getDB() {
     const str = await response.Body.transformToString();
     return JSON.parse(str);
   } catch (error) {
-    // Se o arquivo não existir (primeira vez), retorna array vazio
-    return [];
+    return []; // Retorna vazio se o arquivo não existir ainda
   }
 }
 
@@ -37,7 +36,7 @@ async function saveDB(data) {
   await S3.send(command);
 }
 
-// Helper: Gerar Link (Lógica do Backend)
+// Helper: Gerar Link Fresco
 function generateLink(call, host, protocol) {
   let expiryTime = null;
   const mins = parseInt(call.mins);
@@ -58,7 +57,6 @@ function generateLink(call, host, protocol) {
 }
 
 export default async function handler(req, res) {
-  // CORS
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,DELETE,OPTIONS');
@@ -67,7 +65,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
-    // --- POST: Salvar/Criar Chamada (Usado pelo Painel) ---
+    // POST: Salvar/Criar Chamada
     if (req.method === 'POST') {
       const { id, name, video, avatar, mins } = req.body;
       if (!name || !video) return res.status(400).json({ error: 'Dados incompletos' });
@@ -77,16 +75,16 @@ export default async function handler(req, res) {
       
       const existingIndex = db.findIndex(c => c.id === newCall.id);
       if (existingIndex > -1) {
-        db[existingIndex] = newCall; // Atualizar
+        db[existingIndex] = newCall;
       } else {
-        db.unshift(newCall); // Criar novo
+        db.unshift(newCall);
       }
 
       await saveDB(db);
       return res.status(200).json({ success: true, data: newCall });
     }
 
-    // --- DELETE: Apagar Chamada (Usado pelo Painel) ---
+    // DELETE: Apagar Chamada
     if (req.method === 'DELETE') {
       const { id } = req.query;
       let db = await getDB();
@@ -95,12 +93,11 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true });
     }
 
-    // --- GET: Listar ou Pegar Link Específico (Usado pelo Bot e Painel) ---
+    // GET: Listar ou Pegar Link
     if (req.method === 'GET') {
       const { id } = req.query;
       const db = await getDB();
 
-      // Se passar ID, gera um link NOVO e ÚNICO para aquela chamada
       if (id) {
         const call = db.find(c => c.id === id);
         if (!call) return res.status(404).json({ error: 'Chamada não encontrada' });
@@ -110,12 +107,11 @@ export default async function handler(req, res) {
         return res.status(200).json({
           id: call.id,
           name: call.name,
-          url: link, // O link gerado agora com validade fresca
+          url: link,
           validity: call.mins > 0 ? `${call.mins} minutos` : 'Infinita'
         });
       }
 
-      // Se não passar ID, lista todas (para o Painel)
       return res.status(200).json(db);
     }
 
