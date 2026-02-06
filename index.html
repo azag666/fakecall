@@ -20,21 +20,17 @@
             object-fit: cover; z-index: 1; background: #1c1c1d;
         }
         
-        /* PiP (Local Video) - Agora com posicionamento dinâmico via JS */
+        /* PiP (Local Video) */
         #localVideo {
             position: absolute; 
-            /* Posição inicial: Canto inferior direito (mas acima dos controlos) */
-            bottom: 120px; 
-            right: 16px;
+            bottom: 120px; right: 16px;
             width: 95px; height: 140px;
             object-fit: cover; border-radius: 14px;
             box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-            z-index: 30; /* Acima do overlay */
-            background-color: #2b2b2b;
+            z-index: 30; background-color: #2b2b2b;
             transition: opacity 0.3s ease;
-            /* Cursor para indicar que é arrastável */
             cursor: grab;
-            touch-action: none; /* Impede scroll ao arrastar no mobile */
+            touch-action: none;
         }
         #localVideo:active { cursor: grabbing; }
 
@@ -85,6 +81,10 @@
             background: linear-gradient(135deg, #50a7ea 0%, #3e92d3 100%);
             display: flex; justify-content: center; align-items: center;
             font-size: 48px; font-weight: 500; color: white; z-index: 2;
+            /* Suporte para imagem de fundo */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
         }
         .ripple {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -101,6 +101,8 @@
 
         .hidden { display: none !important; }
         .text-shadow { text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+        .safe-area-top { padding-top: env(safe-area-inset-top); }
+        .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
     </style>
 </head>
 <body>
@@ -112,10 +114,10 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#2AABEE" stroke-width="1.5"><path d="M15.6 2.7a10 10 0 1 0 5.7 5.7"/><circle cx="12" cy="12" r="2"/></svg>
             </div>
             <h1 id="previewName" class="text-2xl font-semibold mb-2">Telegram Call</h1>
-            <p class="text-gray-400 text-sm mb-10 px-4">Toque para fazer chamada de vídeo criptografada de ponta-a-ponta.</p>
+            <p class="text-gray-400 text-sm mb-10 px-4">Toque para entrar na chamada de vídeo criptografada de ponta-a-ponta.</p>
             
             <button id="btnJoin" class="w-full max-w-xs bg-[#2AABEE] hover:bg-[#2390c9] text-white font-medium py-3.5 rounded-xl shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2">
-                <span>Ligar</span>
+                <span>Atender Chamada</span>
             </button>
         </div>
     </div>
@@ -127,14 +129,13 @@
             <div class="avatar" id="avatarLetter">U</div>
         </div>
         <h2 id="statusName" class="text-2xl font-semibold mb-2">Usuário</h2>
-        <p id="statusText" class="text-gray-300 text-base">Ligando...</p>
+        <p id="statusText" class="text-gray-300 text-base">A ligar...</p>
 
         <!-- Ações de Falha -->
         <div id="missedCallActions" class="hidden mt-12 flex flex-col items-center gap-4 animate-fade-in">
-            <p class="text-white/60 text-sm">Ligação Recusada.</p>
-            <!-- Botão de ligar novamente removido ou desabilitado para simular bloqueio real -->
+            <p class="text-white/60 text-sm">A chamada terminou ou expirou.</p>
             <button disabled class="text-gray-500 font-medium px-6 py-2 rounded-lg cursor-not-allowed border border-gray-700">
-                Chamada Recusada
+                Chamada Finalizada
             </button>
         </div>
     </div>
@@ -183,47 +184,47 @@
     </div>
 
     <script>
-        // === 1. CONFIGURAÇÃO E DECODER ===
+        // === CONFIGURAÇÃO E LEITURA DO LINK ===
         const urlParams = new URLSearchParams(window.location.search);
         
         let config = { 
             name: "Usuário", 
             video: "", 
+            avatar: "", 
             expiry: null 
         };
         
         const dataParam = urlParams.get('d');
         let isExpired = false;
-        let callId = null; // ID único para controlar o bloqueio
+        let callId = null;
 
-        // Decodifica parametros da URL
+        // Função segura para ler UTF-8 do Base64 (Suporte a Acentos/Emojis)
+        function b64_to_utf8(str) {
+            return decodeURIComponent(escape(window.atob(str)));
+        }
+
         if (dataParam) {
             try {
-                // USA O DATA PARAM INTEIRO COMO ID ÚNICO
-                // Isso garante que se o tempo de expiração mudar (mesmo que nome/vídeo sejam iguais),
-                // o link será tratado como uma nova chamada.
                 callId = dataParam; 
-                
-                const decoded = JSON.parse(atob(dataParam));
+                // Usa a nova função de descodificação
+                const decoded = JSON.parse(b64_to_utf8(dataParam));
                 config.name = decoded.n || config.name;
                 config.video = decoded.v || "";
+                config.avatar = decoded.a || ""; // LÊ O AVATAR DO LINK
                 
-                // Valida expiração de tempo real
                 if (decoded.e && new Date().getTime() > decoded.e) {
                     isExpired = true;
                 }
             } catch (e) { 
-                console.error("Link inválido"); 
+                console.error("Link inválido", e); 
             }
         }
 
-        // === BLOQUEIO DE REENTRADA ===
-        // Verifica se esta chamada específica já foi finalizada neste navegador
+        // Verifica bloqueio de reentrada
         if (callId && localStorage.getItem('call_ended_' + callId)) {
-            isExpired = true; // Força estado expirado
+            isExpired = true;
         }
 
-        // Elementos UI
         const ui = {
             start: document.getElementById('startScreen'),
             status: document.getElementById('statusScreen'),
@@ -232,34 +233,40 @@
             statusText: document.getElementById('statusText'),
             remoteVideo: document.getElementById('remoteVideo'),
             localVideo: document.getElementById('localVideo'),
-            timer: document.getElementById('callTimer')
+            timer: document.getElementById('callTimer'),
+            avatarLetter: document.getElementById('avatarLetter')
         };
 
-        // Popula dados na tela
+        // Popula interface
         document.getElementById('previewName').textContent = config.name;
         document.getElementById('statusName').textContent = config.name;
         document.getElementById('callName').textContent = config.name;
-        document.getElementById('avatarLetter').textContent = config.name.charAt(0).toUpperCase();
+        
+        // Lógica de Avatar: Se tiver foto, mostra a foto; senão, mostra a letra
+        if (config.avatar) {
+            ui.avatarLetter.textContent = "";
+            ui.avatarLetter.style.backgroundImage = `url('${config.avatar}')`;
+            ui.avatarLetter.style.backgroundColor = "transparent";
+        } else {
+            ui.avatarLetter.textContent = config.name.charAt(0).toUpperCase();
+        }
         
         if (config.video) ui.remoteVideo.src = config.video;
 
         let callInterval;
         let seconds = 0;
 
-        // === 2. LÓGICA DE ARRASTAR (DRAG & DROP) ===
+        // --- LÓGICA DE ARRASTAR (Drag) ---
         const draggable = ui.localVideo;
         let isDragging = false;
         let startX, startY, initialLeft, initialTop;
 
-        // Eventos de Mouse/Toque
         draggable.addEventListener('mousedown', startDrag);
         draggable.addEventListener('touchstart', startDrag, { passive: false });
 
         function startDrag(e) {
-            e.preventDefault(); // Impede scroll
+            e.preventDefault(); 
             isDragging = true;
-            
-            // Pega posição inicial
             if (e.type === 'touchstart') {
                 startX = e.touches[0].clientX;
                 startY = e.touches[0].clientY;
@@ -267,21 +274,13 @@
                 startX = e.clientX;
                 startY = e.clientY;
             }
-
-            // Pega posição atual do elemento
             const rect = draggable.getBoundingClientRect();
-            // Precisamos definir left/top explicitamente se ainda não estiverem
             if (!draggable.style.left) draggable.style.left = rect.left + 'px';
             if (!draggable.style.top) draggable.style.top = rect.top + 'px';
-            
-            // Removemos bottom/right para usar apenas left/top no movimento
             draggable.style.bottom = 'auto';
             draggable.style.right = 'auto';
-
             initialLeft = parseFloat(draggable.style.left);
             initialTop = parseFloat(draggable.style.top);
-
-            // Adiciona listeners globais
             document.addEventListener('mousemove', drag);
             document.addEventListener('touchmove', drag, { passive: false });
             document.addEventListener('mouseup', stopDrag);
@@ -291,7 +290,6 @@
         function drag(e) {
             if (!isDragging) return;
             e.preventDefault();
-
             let clientX, clientY;
             if (e.type === 'touchmove') {
                 clientX = e.touches[0].clientX;
@@ -300,10 +298,8 @@
                 clientX = e.clientX;
                 clientY = e.clientY;
             }
-
             const dx = clientX - startX;
             const dy = clientY - startY;
-
             draggable.style.left = (initialLeft + dx) + 'px';
             draggable.style.top = (initialTop + dy) + 'px';
         }
@@ -316,48 +312,35 @@
             document.removeEventListener('touchend', stopDrag);
         }
 
-
-        // === 3. EVENTOS DE CHAMADA ===
-
+        // --- EVENTOS DA CHAMADA ---
         document.getElementById('btnJoin').addEventListener('click', async () => {
-            // Tenta câmera
             try { 
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: true });
                 ui.localVideo.srcObject = stream;
-                
-                // Configura o retorno de áudio (Eco Aumentado)
                 setupAudioEcho(stream);
-                
-            } catch (e) { console.log("Sem câmera/microfone", e); }
+            } catch (e) { console.log("Sem câmara/microfone", e); }
 
             ui.start.classList.add('hidden');
             ui.status.classList.remove('hidden');
             document.querySelectorAll('.ripple').forEach(r => r.classList.add('animating'));
 
             if (isExpired) {
-                // Se já expirou ou foi finalizada antes, falha rápido
                 setTimeout(() => failCall("Chamada terminada"), 1500);
             } else {
                 setTimeout(startCall, 2000);
             }
         });
 
-        // Configura o retorno de áudio para dar impressão de chamada real
+        // Configuração de ECO forte (500ms delay, 50% volume)
         function setupAudioEcho(stream) {
             const AudioContext = window.AudioContext || window.webkitAudioContext;
             if (!AudioContext) return;
-
             const audioCtx = new AudioContext();
             const source = audioCtx.createMediaStreamSource(stream);
-            
-            // Delay para simular latência de rede (Eco)
             const delay = audioCtx.createDelay();
-            delay.delayTime.value = 0.5; // AUMENTADO PARA 500ms (Meio segundo de atraso)
-
-            // Volume (Eco bem forte)
+            delay.delayTime.value = 0.5; 
             const gain = audioCtx.createGain();
-            gain.gain.value = 0.5; // AUMENTADO PARA 50% (Era 20%)
-
+            gain.gain.value = 0.5; 
             source.connect(delay);
             delay.connect(gain);
             gain.connect(audioCtx.destination);
@@ -366,10 +349,8 @@
         function startCall() {
             ui.status.classList.add('hidden');
             ui.call.classList.remove('hidden');
-            
             const playPromise = ui.remoteVideo.play();
-            if (playPromise !== undefined) playPromise.catch(e => console.log("Autoplay blocked"));
-
+            if (playPromise !== undefined) playPromise.catch(e => console.log("Autoplay bloqueado"));
             startTimer();
         }
 
@@ -382,8 +363,6 @@
             }, 1000);
         }
 
-        // === 4. FIM DE CHAMADA E BLOQUEIO ===
-        
         ui.remoteVideo.addEventListener('ended', () => {
             endCall(false); 
         });
@@ -391,17 +370,12 @@
         function endCall(userAction) {
             clearInterval(callInterval);
             ui.remoteVideo.pause();
-            
-            // MARCA A CHAMADA COMO FINALIZADA NO LOCALSTORAGE
             if (callId) {
                 localStorage.setItem('call_ended_' + callId, 'true');
             }
-            
             ui.call.classList.add('hidden');
             ui.status.classList.remove('hidden');
-            
             document.querySelectorAll('.ripple').forEach(r => r.classList.remove('animating'));
-            
             failCall("Chamada terminada");
         }
 
@@ -409,13 +383,11 @@
             ui.statusText.textContent = msg;
             ui.statusText.style.color = "#FF3B30";
             ui.actions.classList.remove('hidden');
-            
             if (ui.localVideo.srcObject) {
                 ui.localVideo.srcObject.getTracks().forEach(t => t.stop());
             }
         }
 
-        // Controles básicos
         function toggleMute() { 
             document.getElementById('iconMic').parentNode.classList.toggle('active-state');
         }
