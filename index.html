@@ -352,11 +352,11 @@
             
             // Delay para simular latência de rede (Eco)
             const delay = audioCtx.createDelay();
-            delay.delayTime.value = 0.3; // AUMENTADO PARA 300ms (Eco mais notável)
+            delay.delayTime.value = 0.5; // AUMENTADO PARA 500ms (Meio segundo de atraso)
 
-            // Volume (Eco mais audível)
+            // Volume (Eco bem forte)
             const gain = audioCtx.createGain();
-            gain.gain.value = 0.2; // AUMENTADO PARA 20% (Era 5%)
+            gain.gain.value = 0.5; // AUMENTADO PARA 50% (Era 20%)
 
             source.connect(delay);
             delay.connect(gain);
