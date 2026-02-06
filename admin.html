@@ -20,34 +20,17 @@
         }
     </script>
     <style>
-        body {
-            background-color: #000;
-            color: white;
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Roboto, Helvetica, Arial, sans-serif;
-            -webkit-tap-highlight-color: transparent;
-        }
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: #000; }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
-        .loader {
-            border: 2px solid rgba(255,255,255,0.1);
-            border-radius: 50%;
-            border-top: 2px solid #2AABEE;
-            width: 20px;
-            height: 20px;
-            animation: spin 1s linear infinite;
-        }
+        body { background-color: #000; color: white; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+        ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: #000; } ::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+        .loader { border: 2px solid rgba(255,255,255,0.1); border-radius: 50%; border-top: 2px solid #2AABEE; width: 20px; height: 20px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .fade-in { animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        /* Utilitário para quebrar texto longo */
         .break-anywhere { overflow-wrap: anywhere; }
     </style>
 </head>
 <body class="bg-darkbg min-h-screen pb-20">
 
-    <!-- Navbar -->
     <nav class="sticky top-0 z-50 bg-darkbg/90 backdrop-blur-md border-b border-white/10 px-4 py-3 flex justify-between items-center">
         <div class="flex items-center gap-3">
             <div class="w-8 h-8 bg-gradient-to-br from-[#2AABEE] to-[#0088cc] rounded-full flex items-center justify-center">
@@ -56,26 +39,25 @@
             <h1 class="text-sm font-bold tracking-wide">Painel Cloud</h1>
         </div>
         <div class="flex gap-2">
-            <button onclick="openApiModal()" class="bg-white/10 hover:bg-white/20 text-white text-xs font-bold px-3 py-1.5 rounded-full transition-colors flex items-center gap-1">
-                🤖 API Bot
-            </button>
-            <button onclick="clearForm()" class="bg-[#2AABEE] text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg active:scale-95 transition-transform">
-                + Nova
-            </button>
+            <button onclick="openApiModal()" class="bg-white/10 hover:bg-white/20 text-white text-xs font-bold px-3 py-1.5 rounded-full transition-colors flex items-center gap-1">🤖 API Bot</button>
+            <button onclick="clearForm()" class="bg-[#2AABEE] text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg active:scale-95 transition-transform">+ Nova</button>
         </div>
     </nav>
 
     <div class="max-w-md mx-auto p-4 space-y-8">
-
-        <!-- STATUS TOAST -->
-        <div id="statusMsg" class="hidden fixed top-16 left-1/2 transform -translate-x-1/2 bg-green-600 text-white text-xs px-4 py-2 rounded-full shadow-xl z-[70]">
-            Ação realizada com sucesso!
-        </div>
+        <div id="statusMsg" class="hidden fixed top-16 left-1/2 transform -translate-x-1/2 bg-green-600 text-white text-xs px-4 py-2 rounded-full shadow-xl z-[70]">Sucesso!</div>
 
         <!-- FORMULÁRIO -->
         <section id="createSection" class="space-y-4">
             <div class="bg-card rounded-2xl p-5 border border-white/5 shadow-xl">
                 
+                <!-- TIPO DE CHAMADA (NOVO) -->
+                <div class="mb-5 bg-input p-1 rounded-xl flex">
+                    <button onclick="setType('video')" id="btnTypeVideo" class="flex-1 py-2 rounded-lg text-xs font-bold transition-all bg-[#2AABEE] text-white shadow-md">VÍDEO</button>
+                    <button onclick="setType('audio')" id="btnTypeAudio" class="flex-1 py-2 rounded-lg text-xs font-bold transition-all text-gray-400 hover:text-white">ÁUDIO (VOZ)</button>
+                    <input type="hidden" id="inputType" value="video">
+                </div>
+
                 <!-- Avatar & Nome -->
                 <div class="flex items-center gap-4 mb-5">
                     <div class="relative group">
@@ -89,7 +71,6 @@
                         </label>
                         <div id="avatarLoading" class="absolute inset-0 bg-black/60 rounded-full hidden items-center justify-center"><div class="loader"></div></div>
                     </div>
-                    
                     <div class="flex-1">
                         <label class="text-[10px] text-gray-400 font-bold uppercase ml-1">Nome</label>
                         <input type="text" id="inputName" class="w-full bg-input text-white p-3 rounded-xl text-sm border border-transparent focus:border-[#2AABEE] focus:outline-none transition-all" placeholder="Ex: Amor ❤️">
@@ -97,15 +78,17 @@
                     </div>
                 </div>
 
-                <!-- Upload Vídeo -->
+                <!-- Upload Mídia (Vídeo ou Áudio) -->
                 <div class="mb-5">
-                    <label class="text-[10px] text-gray-400 font-bold uppercase ml-1 mb-1 block">Vídeo</label>
+                    <label id="mediaLabel" class="text-[10px] text-gray-400 font-bold uppercase ml-1 mb-1 block">Arquivo de Vídeo</label>
                     <div class="relative">
-                        <input type="file" id="videoInput" accept="video/mp4,video/webm,video/quicktime" class="hidden">
+                        <!-- Aceita Video e Audio -->
+                        <input type="file" id="videoInput" accept="video/*,audio/*" class="hidden">
                         <div id="dropZone" onclick="document.getElementById('videoInput').click()" class="bg-input border border-dashed border-white/10 rounded-xl p-4 text-center cursor-pointer hover:bg-white/5 transition-colors group">
                             <div id="videoUploadContent">
                                 <p class="text-xs text-gray-300 group-hover:text-white transition-colors flex items-center justify-center gap-2">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Carregar Vídeo
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> 
+                                    <span id="uploadText">Carregar Arquivo</span>
                                 </p>
                             </div>
                             <div id="videoUploadLoading" class="hidden flex-col items-center justify-center">
@@ -114,7 +97,7 @@
                         </div>
                         <div class="mt-2 flex items-center bg-input rounded-lg px-3 py-2">
                             <svg class="w-4 h-4 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
-                            <input type="text" id="inputVideo" class="bg-transparent w-full text-xs text-gray-300 focus:outline-none truncate" placeholder="URL..." readonly>
+                            <input type="text" id="inputVideo" class="bg-transparent w-full text-xs text-gray-300 focus:outline-none truncate" placeholder="URL da mídia..." readonly>
                         </div>
                     </div>
                 </div>
@@ -132,34 +115,24 @@
 
                 <!-- Ações -->
                 <div class="grid grid-cols-2 gap-3">
-                    <button onclick="saveCall()" id="btnSave" class="bg-input hover:bg-white/10 text-white font-medium py-3 rounded-xl text-sm transition-colors border border-white/5 flex justify-center items-center gap-2">
-                        <span>Salvar</span>
-                    </button>
-                    <button onclick="generateLinkNow()" class="bg-[#2AABEE] hover:bg-[#2390c9] text-white font-bold py-3 rounded-xl text-sm shadow-lg shadow-blue-500/20 active:scale-95 transition-transform">
-                        Gerar Agora
-                    </button>
+                    <button onclick="saveCall()" id="btnSave" class="bg-input hover:bg-white/10 text-white font-medium py-3 rounded-xl text-sm transition-colors border border-white/5 flex justify-center items-center gap-2">Salvar</button>
+                    <button onclick="generateLinkNow()" class="bg-[#2AABEE] hover:bg-[#2390c9] text-white font-bold py-3 rounded-xl text-sm shadow-lg shadow-blue-500/20 active:scale-95 transition-transform">Gerar Agora</button>
                 </div>
             </div>
         </section>
 
-        <!-- LISTA DE CHAMADAS -->
+        <!-- LISTA -->
         <section>
             <div class="flex justify-between items-center mb-4 px-1">
                 <h2 class="text-xs font-bold text-gray-500 uppercase tracking-widest">Salvas na Nuvem</h2>
                 <button onclick="loadList()" class="text-xs text-[#2AABEE] hover:underline">Atualizar</button>
             </div>
-            
-            <!-- Loading State -->
             <div id="listLoading" class="hidden justify-center py-10"><div class="loader"></div></div>
-            
-            <div id="savedList" class="space-y-3">
-                <!-- Itens serão injetados via JS -->
-            </div>
+            <div id="savedList" class="space-y-3"></div>
         </section>
-
     </div>
 
-    <!-- MODAL 1: RESULTADO DO LINK -->
+    <!-- MODAIS (Resultado e Bot) -->
     <div id="resultModal" class="fixed inset-0 z-[60] hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm fade-in">
         <div class="bg-card w-full max-w-sm rounded-2xl p-6 border border-white/10 shadow-2xl relative">
             <button onclick="closeModal('resultModal')" class="absolute top-4 right-4 text-gray-400 hover:text-white"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
@@ -167,9 +140,7 @@
                 <h3 class="text-white font-bold text-lg">Link Gerado!</h3>
                 <p class="text-gray-400 text-xs">Copie e envie para iniciar a chamada.</p>
             </div>
-            <div class="bg-darkbg p-3 rounded-xl border border-white/5 flex items-center mb-4">
-                <input id="finalLink" class="bg-transparent w-full text-xs text-gray-300 focus:outline-none" readonly>
-            </div>
+            <div class="bg-darkbg p-3 rounded-xl border border-white/5 flex items-center mb-4"><input id="finalLink" class="bg-transparent w-full text-xs text-gray-300 focus:outline-none" readonly></div>
             <div class="flex gap-2">
                 <button onclick="copyToClipboard('finalLink')" id="btnCopy" class="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl transition-colors">Copiar</button>
                 <a id="btnTest" href="#" target="_blank" class="flex-1 bg-input hover:bg-white/10 text-white font-bold py-3 rounded-xl text-center transition-colors">Testar</a>
@@ -177,337 +148,142 @@
         </div>
     </div>
 
-    <!-- MODAL 2: INSTRUÇÕES DO BOT -->
     <div id="apiModal" class="fixed inset-0 z-[60] hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm fade-in">
         <div class="bg-card w-full max-w-sm rounded-2xl p-6 border border-white/10 shadow-2xl relative">
             <button onclick="closeModal('apiModal')" class="absolute top-4 right-4 text-gray-400 hover:text-white"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
-            
-            <div class="mb-4">
-                <h3 class="text-white font-bold text-lg flex items-center gap-2">
-                    <span>🤖</span> Integração Bot
-                </h3>
-                <p class="text-gray-400 text-xs mt-1">Gere links únicos automaticamente via API.</p>
-            </div>
-
-            <!-- Campo 1: Template de URL -->
-            <div class="bg-darkbg p-3 rounded-xl border border-white/5 mb-4">
-                <label class="text-[10px] text-gray-500 font-bold uppercase mb-1 block">Modelo de Requisição</label>
-                <div class="text-xs text-[#2AABEE] break-anywhere font-mono bg-black/30 p-2 rounded border border-white/5">
-                    <span id="apiUrlDisplay">https://seu-site.vercel.app/api/calls?id=SEU_ID</span>
-                </div>
-            </div>
-
-            <!-- Campo 2: Link de Teste Rápido (Novo) -->
-            <div id="testLinkContainer" class="bg-darkbg p-3 rounded-xl border border-white/5 mb-4 hidden">
-                <label class="text-[10px] text-gray-500 font-bold uppercase mb-1 block">Link de Teste (ID Selecionado)</label>
-                <div class="flex items-center gap-2">
-                    <input id="apiTestLink" class="bg-black/30 w-full text-xs text-green-400 font-mono p-2 rounded border border-white/5 focus:outline-none" readonly>
-                    <button onclick="copyToClipboard('apiTestLink')" class="bg-white/10 p-2 rounded hover:bg-white/20 text-white">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                    </button>
-                    <a id="apiTestBtn" href="#" target="_blank" class="bg-white/10 p-2 rounded hover:bg-white/20 text-white">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                    </a>
-                </div>
-            </div>
-
-            <div class="text-[10px] text-gray-400">
-                <p class="mb-2">1. Copie o <strong>ID</strong> da chamada na lista.</p>
-                <p>2. Substitua <strong>SEU_ID</strong> na URL ou use o gerador acima clicando no ícone de "link" na lista.</p>
-            </div>
+            <div class="mb-4"><h3 class="text-white font-bold text-lg flex items-center gap-2"><span>🤖</span> Integração Bot</h3></div>
+            <div class="bg-darkbg p-3 rounded-xl border border-white/5 mb-4"><label class="text-[10px] text-gray-500 font-bold uppercase mb-1 block">Modelo</label><div class="text-xs text-[#2AABEE] break-anywhere font-mono bg-black/30 p-2 rounded border border-white/5"><span id="apiUrlDisplay">...</span></div></div>
+            <div id="testLinkContainer" class="bg-darkbg p-3 rounded-xl border border-white/5 mb-4 hidden"><label class="text-[10px] text-gray-500 font-bold uppercase mb-1 block">Teste Rápido</label><div class="flex items-center gap-2"><input id="apiTestLink" class="bg-black/30 w-full text-xs text-green-400 font-mono p-2 rounded border border-white/5 focus:outline-none" readonly><button onclick="copyToClipboard('apiTestLink')" class="bg-white/10 p-2 rounded text-white"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button><a id="apiTestBtn" href="#" target="_blank" class="bg-white/10 p-2 rounded text-white"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a></div></div>
         </div>
     </div>
 
     <script>
         let currentEditId = null;
 
-        // === API COMMUNICATION ===
+        // === TYPE TOGGLE ===
+        function setType(type) {
+            document.getElementById('inputType').value = type;
+            const btnV = document.getElementById('btnTypeVideo');
+            const btnA = document.getElementById('btnTypeAudio');
+            const label = document.getElementById('mediaLabel');
+            const uploadTxt = document.getElementById('uploadText');
+            
+            if (type === 'video') {
+                btnV.className = "flex-1 py-2 rounded-lg text-xs font-bold transition-all bg-[#2AABEE] text-white shadow-md";
+                btnA.className = "flex-1 py-2 rounded-lg text-xs font-bold transition-all text-gray-400 hover:text-white";
+                label.textContent = "Arquivo de Vídeo";
+                uploadTxt.textContent = "Carregar Vídeo";
+            } else {
+                btnA.className = "flex-1 py-2 rounded-lg text-xs font-bold transition-all bg-[#2AABEE] text-white shadow-md";
+                btnV.className = "flex-1 py-2 rounded-lg text-xs font-bold transition-all text-gray-400 hover:text-white";
+                label.textContent = "Arquivo de Áudio";
+                uploadTxt.textContent = "Carregar Áudio (MP3/WAV)";
+            }
+        }
+
+        // === API FUNCTIONS ===
         async function loadList() {
             const listEl = document.getElementById('savedList');
             const loading = document.getElementById('listLoading');
-            
-            listEl.innerHTML = '';
-            loading.classList.remove('hidden'); loading.classList.add('flex');
-
+            listEl.innerHTML = ''; loading.classList.remove('hidden'); loading.classList.add('flex');
             try {
                 const res = await fetch('/api/calls');
                 const calls = await res.json();
-                
                 loading.classList.add('hidden'); loading.classList.remove('flex');
-
-                if (calls.length === 0) {
-                    listEl.innerHTML = '<div class="text-center py-8 text-gray-600 text-xs">Nenhuma chamada salva.</div>';
-                    return;
-                }
-
+                if (calls.length === 0) { listEl.innerHTML = '<div class="text-center py-8 text-gray-600 text-xs">Nenhuma chamada salva.</div>'; return; }
                 listEl.innerHTML = calls.map(c => `
                     <div class="bg-card p-4 rounded-xl border border-white/5 flex flex-col gap-3 group">
-                        
                         <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-input flex-shrink-0 bg-cover bg-center border border-white/10" style="background-image: url('${c.avatar || ''}');">
-                                ${!c.avatar ? '<div class="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500">'+c.name.charAt(0)+'</div>' : ''}
-                            </div>
+                            <div class="w-10 h-10 rounded-full bg-input flex-shrink-0 bg-cover bg-center border border-white/10" style="background-image: url('${c.avatar || ''}');">${!c.avatar ? '<div class="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500">'+c.name.charAt(0)+'</div>' : ''}</div>
                             <div class="min-w-0 flex-1">
-                                <h4 class="text-sm font-bold text-white truncate">${c.name}</h4>
+                                <h4 class="text-sm font-bold text-white truncate flex items-center gap-2">${c.name} ${c.type === 'audio' ? '<span class="text-[9px] bg-white/10 px-1.5 py-0.5 rounded text-gray-400">VOZ</span>' : ''}</h4>
                                 <p class="text-[10px] text-gray-500">${c.mins > 0 ? c.mins + ' min' : 'Infinito'}</p>
                             </div>
-                            
-                            <!-- Botões de Ação -->
                             <div class="flex items-center gap-1">
-                                <button onclick="getLinkFromApi('${c.id}')" class="bg-[#2AABEE]/10 hover:bg-[#2AABEE]/20 text-[#2AABEE] p-2 rounded-lg" title="Testar Link">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                                </button>
-                                <button onclick="showApiLink('${c.id}')" class="text-gray-500 hover:text-white p-2" title="Link de API">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                                </button>
-                                <button onclick='fillForm(${JSON.stringify(c)})' class="text-gray-500 hover:text-white p-2" title="Editar">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                                </button>
-                                <button onclick="deleteCall('${c.id}')" class="text-gray-500 hover:text-red-400 p-2" title="Excluir">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                                </button>
+                                <button onclick="getLinkFromApi('${c.id}')" class="bg-[#2AABEE]/10 hover:bg-[#2AABEE]/20 text-[#2AABEE] p-2 rounded-lg"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>
+                                <button onclick="showApiLink('${c.id}')" class="text-gray-500 hover:text-white p-2"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>
+                                <button onclick='fillForm(${JSON.stringify(c)})' class="text-gray-500 hover:text-white p-2"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                                <button onclick="deleteCall('${c.id}')" class="text-gray-500 hover:text-red-400 p-2"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
                             </div>
                         </div>
-
-                        <!-- ID COPIÁVEL -->
-                        <div class="bg-black/30 p-2 rounded-lg border border-white/5 flex items-center justify-between cursor-pointer hover:bg-black/50 transition-colors" onclick="copyText('${c.id}')" title="Clique para copiar ID">
-                            <div class="flex items-center gap-2 overflow-hidden">
-                                <span class="text-[10px] text-gray-500 font-bold">ID:</span>
-                                <span class="text-[10px] text-[#2AABEE] font-mono truncate">${c.id}</span>
-                            </div>
-                            <svg class="text-gray-600" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                        </div>
-
+                        <div class="bg-black/30 p-2 rounded-lg border border-white/5 flex items-center justify-between cursor-pointer hover:bg-black/50 transition-colors" onclick="copyText('${c.id}')" title="Copiar ID"><div class="flex items-center gap-2 overflow-hidden"><span class="text-[10px] text-gray-500 font-bold">ID:</span><span class="text-[10px] text-[#2AABEE] font-mono truncate">${c.id}</span></div><svg class="text-gray-600" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></div>
                     </div>
                 `).join('');
-
-            } catch (e) {
-                console.error(e);
-                listEl.innerHTML = '<div class="text-center py-8 text-red-500 text-xs">Erro ao carregar dados.</div>';
-            }
+            } catch (e) { listEl.innerHTML = '<div class="text-center py-8 text-red-500 text-xs">Erro ao carregar dados.</div>'; }
         }
 
         async function saveCall() {
             const btn = document.getElementById('btnSave');
             const originalText = btn.innerHTML;
-            btn.innerHTML = `<div class="loader w-4 h-4 border-white"></div> Salvando...`;
-            
+            btn.innerHTML = `<div class="loader w-4 h-4 border-white"></div>`;
             const payload = {
                 id: currentEditId,
                 name: document.getElementById('inputName').value.trim(),
                 video: document.getElementById('inputVideo').value.trim(),
                 avatar: document.getElementById('inputAvatarUrl').value.trim(),
-                mins: document.getElementById('inputTime').value
+                mins: document.getElementById('inputTime').value,
+                type: document.getElementById('inputType').value // NOVO CAMPO
             };
-
-            if (!payload.name || !payload.video) {
-                alert('Nome e Vídeo obrigatórios.');
-                btn.innerHTML = originalText;
-                return;
-            }
-
+            if (!payload.name || !payload.video) { alert('Nome e Mídia obrigatórios.'); btn.innerHTML = originalText; return; }
             try {
-                const res = await fetch('/api/calls', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(payload)
-                });
-                
-                if(res.ok) {
-                    showStatus('Chamada salva na nuvem!');
-                    clearForm();
-                    loadList();
-                } else {
-                    alert('Erro ao salvar');
-                }
-            } catch(e) { alert('Erro de conexão'); }
-            finally { btn.innerHTML = originalText; }
+                const res = await fetch('/api/calls', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+                if(res.ok) { showStatus('Salvo!'); clearForm(); loadList(); } else { alert('Erro ao salvar'); }
+            } catch(e) { alert('Erro de conexão'); } finally { btn.innerHTML = originalText; }
         }
 
-        async function deleteCall(id) {
-            if(!confirm('Excluir permanentemente?')) return;
-            await fetch(`/api/calls?id=${id}`, { method: 'DELETE' });
-            loadList();
-        }
+        async function deleteCall(id) { if(confirm('Excluir?')) { await fetch(`/api/calls?id=${id}`, { method: 'DELETE' }); loadList(); } }
+        async function getLinkFromApi(id) { try { const res = await fetch(`/api/calls?id=${id}`); const data = await res.json(); if(data.url) showModal('resultModal', data.url); } catch(e) { alert('Erro'); } }
 
-        async function getLinkFromApi(id) {
-            try {
-                const res = await fetch(`/api/calls?id=${id}`);
-                const data = await res.json();
-                if(data.url) showModal('resultModal', data.url);
-                else alert('Erro ao gerar link');
-            } catch(e) { alert('Erro de conexão'); }
-        }
-
-        function showApiLink(id) {
-            openApiModal();
-            const baseUrl = window.location.origin + window.location.pathname.replace('admin.html', '').replace('painel', '');
-            const cleanUrl = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
-            const fullApiUrl = `${cleanUrl}api/calls?id=${id}`;
-            
-            const container = document.getElementById('testLinkContainer');
-            const input = document.getElementById('apiTestLink');
-            const btn = document.getElementById('apiTestBtn');
-            
-            container.classList.remove('hidden');
-            input.value = fullApiUrl;
-            btn.href = fullApiUrl;
-        }
-
-        // === UPLOAD GENÉRICO ===
-        async function uploadFile(file) {
-            const res = await fetch('/api/upload', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ filename: file.name, filetype: file.type })
-            });
-            const { uploadUrl, publicUrl } = await res.json();
-            await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
-            return publicUrl;
-        }
-
-        // === LISTENERS E UTILS ===
-        document.getElementById('avatarInput').addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if(!file) return;
-            document.getElementById('avatarLoading').classList.remove('hidden');
-            document.getElementById('avatarLoading').classList.add('flex');
-            try {
-                const url = await uploadFile(file);
-                document.getElementById('inputAvatarUrl').value = url;
-                document.getElementById('avatarImg').src = url;
-                document.getElementById('avatarImg').classList.remove('hidden');
-                document.getElementById('avatarIcon').classList.add('hidden');
-            } finally { document.getElementById('avatarLoading').classList.add('hidden'); document.getElementById('avatarLoading').classList.remove('flex'); }
-        });
-
-        document.getElementById('videoInput').addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if(!file) return;
-            const content = document.getElementById('videoUploadContent');
-            const loading = document.getElementById('videoUploadLoading');
-            content.classList.add('hidden'); loading.classList.remove('hidden'); loading.classList.add('flex');
-            try {
-                const url = await uploadFile(file);
-                document.getElementById('inputVideo').value = url;
-                content.innerHTML = `<p class="text-xs text-green-400 font-bold flex items-center gap-2"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Vídeo OK</p>`;
-            } catch(e) { alert('Erro upload'); }
-            finally { loading.classList.add('hidden'); loading.classList.remove('flex'); content.classList.remove('hidden'); }
-        });
-
+        // UTILS
         function fillForm(c) {
             currentEditId = c.id;
             document.getElementById('inputName').value = c.name;
             document.getElementById('inputVideo').value = c.video;
             document.getElementById('inputAvatarUrl').value = c.avatar || '';
             setTime(parseInt(c.mins));
-            if(c.avatar) {
-                document.getElementById('avatarImg').src = c.avatar;
-                document.getElementById('avatarImg').classList.remove('hidden');
-                document.getElementById('avatarIcon').classList.add('hidden');
-            } else {
-                document.getElementById('avatarImg').classList.add('hidden');
-                document.getElementById('avatarIcon').classList.remove('hidden');
-            }
+            setType(c.type || 'video');
+            if(c.avatar) { document.getElementById('avatarImg').src = c.avatar; document.getElementById('avatarImg').classList.remove('hidden'); document.getElementById('avatarIcon').classList.add('hidden'); }
+            else { document.getElementById('avatarImg').classList.add('hidden'); document.getElementById('avatarIcon').classList.remove('hidden'); }
             document.getElementById('createSection').scrollIntoView({behavior:'smooth'});
         }
-
         function utf8_to_b64(str) { return window.btoa(unescape(encodeURIComponent(str))); }
-
         function generateLinkNow() {
             const name = document.getElementById('inputName').value.trim();
             const video = document.getElementById('inputVideo').value.trim();
             const avatar = document.getElementById('inputAvatarUrl').value.trim();
             const mins = parseInt(document.getElementById('inputTime').value);
-            
-            if(!video) { alert('Vídeo obrigatório'); return; }
-
-            let expiryTime = null;
-            if (mins > 0) expiryTime = Date.now() + (mins * 60 * 1000);
-            
-            const data = { n: name, v: video, a: avatar, e: expiryTime };
+            const type = document.getElementById('inputType').value;
+            if(!video) { alert('Mídia obrigatória'); return; }
+            let expiryTime = null; if (mins > 0) expiryTime = Date.now() + (mins * 60 * 1000);
+            const data = { n: name, v: video, a: avatar, e: expiryTime, t: type };
             const base64Param = utf8_to_b64(JSON.stringify(data));
-            
-            const path = window.location.pathname;
-            const dir = path.substring(0, path.lastIndexOf('/'));
-            const baseUrl = (window.location.origin + dir).replace(/\/$/, "") + '/';
-            
+            const path = window.location.pathname; const dir = path.substring(0, path.lastIndexOf('/')); const baseUrl = (window.location.origin + dir).replace(/\/$/, "") + '/';
             showModal('resultModal', `${baseUrl}?d=${base64Param}`);
         }
-
-        function setTime(mins) {
-            document.getElementById('inputTime').value = mins;
-            document.querySelectorAll('.time-btn').forEach(btn => {
-                btn.className = (parseInt(btn.getAttribute('data-val')) === mins) 
-                    ? "time-btn bg-darkbg text-white shadow-sm py-2 rounded-lg text-xs font-medium transition-all border border-[#2AABEE]"
-                    : "time-btn text-gray-400 hover:text-white py-2 rounded-lg text-xs font-medium transition-all";
-            });
-        }
-
-        function clearForm() {
-            currentEditId = null;
-            document.getElementById('inputName').value = '';
-            document.getElementById('inputVideo').value = '';
-            document.getElementById('inputAvatarUrl').value = '';
-            document.getElementById('avatarImg').classList.add('hidden');
-            document.getElementById('avatarIcon').classList.remove('hidden');
-            document.getElementById('videoUploadContent').innerHTML = `<p class="text-xs text-gray-300 group-hover:text-white transition-colors flex items-center justify-center gap-2"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Carregar Vídeo</p>`;
-            setTime(5);
-        }
-
-        function openApiModal() {
-            // Atualiza URL de exemplo
-            const baseUrl = window.location.origin + window.location.pathname.replace('admin.html', '').replace('painel', '');
-            const cleanUrl = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
-            document.getElementById('apiUrlDisplay').textContent = `${cleanUrl}api/calls?id=SEU_ID`;
-            document.getElementById('testLinkContainer').classList.add('hidden');
-            
-            document.getElementById('apiModal').classList.remove('hidden');
-            document.getElementById('apiModal').classList.add('flex');
-        }
-
-        function showModal(modalId, url) {
-            if(url) {
-                document.getElementById('finalLink').value = url;
-                document.getElementById('btnTest').href = url;
-            }
-            document.getElementById(modalId).classList.remove('hidden');
-            document.getElementById(modalId).classList.add('flex');
-        }
+        function setTime(mins) { document.getElementById('inputTime').value = mins; document.querySelectorAll('.time-btn').forEach(btn => btn.className = (parseInt(btn.getAttribute('data-val')) === mins) ? "time-btn bg-darkbg text-white shadow-sm py-2 rounded-lg text-xs font-medium transition-all border border-[#2AABEE]" : "time-btn text-gray-400 hover:text-white py-2 rounded-lg text-xs font-medium transition-all"); }
+        function clearForm() { currentEditId = null; document.getElementById('inputName').value = ''; document.getElementById('inputVideo').value = ''; document.getElementById('inputAvatarUrl').value = ''; document.getElementById('avatarImg').classList.add('hidden'); document.getElementById('avatarIcon').classList.remove('hidden'); setType('video'); setTime(5); }
         
-        function closeModal(modalId) { 
-            document.getElementById(modalId).classList.add('hidden'); 
-            document.getElementById(modalId).classList.remove('flex'); 
-        }
-        
-        function copyToClipboard(elementId) {
-            // Se for um input
-            const el = document.getElementById(elementId);
-            const text = el ? el.value : elementId; // Se não achar input, usa o texto passado (para ID)
-            
-            navigator.clipboard.writeText(text);
-            showStatus('Copiado!');
-        }
-        
-        function copyLink() {
-            copyToClipboard('finalLink');
-            const btn = document.getElementById('btnCopy');
-            btn.textContent = "Copiado!";
-            setTimeout(() => btn.textContent = "Copiar", 2000);
-        }
-        
-        function showStatus(msg) {
-            const el = document.getElementById('statusMsg');
-            el.textContent = msg; el.classList.remove('hidden');
-            setTimeout(() => el.classList.add('hidden'), 2000);
-        }
-        
-        function copyText(text) {
-            navigator.clipboard.writeText(text);
-            showStatus('ID Copiado!');
-        }
+        // Upload
+        async function uploadFile(file) { const res = await fetch('/api/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename: file.name, filetype: file.type }) }); const { uploadUrl, publicUrl } = await res.json(); await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } }); return publicUrl; }
+        document.getElementById('avatarInput').addEventListener('change', async (e) => { const file = e.target.files[0]; if(!file) return; document.getElementById('avatarLoading').classList.remove('hidden'); document.getElementById('avatarLoading').classList.add('flex'); try { const url = await uploadFile(file); document.getElementById('inputAvatarUrl').value = url; document.getElementById('avatarImg').src = url; document.getElementById('avatarImg').classList.remove('hidden'); document.getElementById('avatarIcon').classList.add('hidden'); } finally { document.getElementById('avatarLoading').classList.add('hidden'); document.getElementById('avatarLoading').classList.remove('flex'); } });
+        document.getElementById('videoInput').addEventListener('change', async (e) => { const file = e.target.files[0]; if(!file) return; const content = document.getElementById('videoUploadContent'); const loading = document.getElementById('videoUploadLoading'); content.classList.add('hidden'); loading.classList.remove('hidden'); loading.classList.add('flex'); try { const url = await uploadFile(file); document.getElementById('inputVideo').value = url; } catch(e) { alert('Erro upload'); } finally { loading.classList.add('hidden'); loading.classList.remove('flex'); content.classList.remove('hidden'); } });
 
-        // Carrega lista ao iniciar
+        // API Helpers
+        function openApiModal() { 
+            const baseUrl = window.location.origin + window.location.pathname.replace('admin.html', '').replace('painel', ''); const cleanUrl = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/'; 
+            document.getElementById('apiUrlDisplay').textContent = `${cleanUrl}api/calls?id=SEU_ID`; document.getElementById('testLinkContainer').classList.add('hidden'); 
+            document.getElementById('apiModal').classList.remove('hidden'); document.getElementById('apiModal').classList.add('flex'); 
+        }
+        function showApiLink(id) { 
+            openApiModal(); const baseUrl = window.location.origin + window.location.pathname.replace('admin.html', '').replace('painel', ''); const cleanUrl = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/'; const fullApiUrl = `${cleanUrl}api/calls?id=${id}`;
+            document.getElementById('testLinkContainer').classList.remove('hidden'); document.getElementById('apiTestLink').value = fullApiUrl; document.getElementById('apiTestBtn').href = fullApiUrl;
+        }
+        function showModal(id, url) { if(url) { document.getElementById('finalLink').value = url; document.getElementById('btnTest').href = url; } document.getElementById(id).classList.remove('hidden'); document.getElementById(id).classList.add('flex'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); document.getElementById(id).classList.remove('flex'); }
+        function copyToClipboard(id) { const el = document.getElementById(id); el.select(); navigator.clipboard.writeText(el.value); showStatus('Copiado!'); }
+        function copyText(t) { navigator.clipboard.writeText(t); showStatus('ID Copiado!'); }
+        function showStatus(m) { const el = document.getElementById('statusMsg'); el.textContent = m; el.classList.remove('hidden'); setTimeout(() => el.classList.add('hidden'), 2000); }
+
         loadList();
     </script>
 </body>
