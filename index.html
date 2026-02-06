@@ -9,13 +9,34 @@
         /* Telegram Font Stack & Reset */
         html, body { margin: 0; padding: 0; width: 100%; height: 100dvh; overflow: hidden; background-color: #000; color: white; font-family: -apple-system, "SF Pro Text", "San Francisco", BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; overscroll-behavior: none; user-select: none; }
 
-        /* MODOS DE EXIBIÇÃO */
-        body.audio-mode { background: radial-gradient(circle at center, #1c2938 0%, #0f161e 100%); }
-        /* CORREÇÃO ÁUDIO: Mantém o vídeo no DOM mas invisível para garantir playback de áudio */
-        body.audio-mode #remoteVideo { opacity: 0; pointer-events: none; position: absolute; z-index: -1; } 
-        body.audio-mode #localVideo { display: none; } /* Garante que vídeo local suma */
-        body.audio-mode #activeCallAvatar { display: flex; } /* Mostra avatar */
+        /* --- MODO ÁUDIO (VOZ) --- */
+        body.audio-mode { 
+            background: #1c252f; /* Fundo base */
+        }
+        
+        /* Fundo desfocado com a foto do perfil (Efeito Telegram) */
+        body.audio-mode::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-size: cover;
+            background-position: center;
+            filter: blur(30px) brightness(0.6);
+            z-index: 0;
+            background-image: var(--bg-image); /* Definido via JS */
+        }
 
+        /* Esconde elementos de vídeo no modo áudio */
+        body.audio-mode #remoteVideo, 
+        body.audio-mode #localVideo { display: none !important; }
+        
+        /* Mostra elementos de áudio */
+        body.audio-mode #activeCallAvatar { display: flex; }
+        body.audio-mode #callTimer { font-size: 16px; opacity: 0.8; }
+        body.audio-mode #callName { font-size: 28px; margin-bottom: 4px; }
+
+        /* --- MODO VÍDEO (PADRÃO) --- */
+        
         /* Camadas */
         #remoteVideo { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; background: #1c1c1d; }
         
@@ -23,35 +44,32 @@
         #localVideo { position: absolute; bottom: 120px; right: 16px; width: 95px; height: 140px; object-fit: cover; border-radius: 14px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); z-index: 30; background-color: #2b2b2b; transition: opacity 0.3s ease; cursor: grab; touch-action: none; }
         #localVideo:active { cursor: grabbing; }
 
-        /* AVATAR CENTRAL (Modo Áudio) */
+        /* AVATAR CENTRAL (Modo Áudio) - Estilo Telegram */
         #activeCallAvatar {
             display: none; /* Padrão oculto */
-            position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
-            width: 140px; height: 140px;
+            position: absolute; 
+            top: 45%; left: 50%; 
+            transform: translate(-50%, -50%);
+            width: 160px; height: 160px;
             z-index: 5;
             align-items: center; justify-content: center;
         }
         .active-avatar-img {
             width: 100%; height: 100%; border-radius: 50%; 
             background-size: cover; background-position: center;
-            box-shadow: 0 0 0 0 rgba(42, 171, 238, 0.7);
-            animation: pulse-ring 2s infinite;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+            /* Sem pulso exagerado, Telegram é mais estático ou sutil */
             display: flex; align-items: center; justify-content: center;
-            font-size: 40px; font-weight: bold; color: white;
-        }
-        @keyframes pulse-ring {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(42, 171, 238, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 20px rgba(42, 171, 238, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(42, 171, 238, 0); }
+            font-size: 60px; font-weight: bold; color: white;
         }
 
         /* Overlay */
         .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 20; display: flex; flex-direction: column; justify-content: space-between; background: linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0) 15%, rgba(0,0,0,0) 85%, rgba(0,0,0,0.4) 100%); pointer-events: none; }
 
         /* Controles */
-        .controls-container { pointer-events: auto; padding-bottom: 32px; display: flex; justify-content: center; gap: 32px; align-items: center; width: 100%; }
-        .control-btn { width: 56px; height: 56px; border-radius: 50%; background-color: rgba(255, 255, 255, 0.15); backdrop-filter: blur(20px); display: flex; justify-content: center; align-items: center; border: none; color: white; transition: background 0.2s; cursor: pointer; }
-        .control-btn:active { background-color: rgba(255, 255, 255, 0.3); }
+        .controls-container { pointer-events: auto; padding-bottom: 40px; display: flex; justify-content: center; gap: 32px; align-items: center; width: 100%; }
+        .control-btn { width: 56px; height: 56px; border-radius: 50%; background-color: rgba(255, 255, 255, 0.2); backdrop-filter: blur(20px); display: flex; justify-content: center; align-items: center; border: none; color: white; transition: background 0.2s; cursor: pointer; }
+        .control-btn:active { background-color: rgba(255, 255, 255, 0.4); }
         .control-btn.active-state { background-color: white; color: black; }
         .btn-end { width: 72px; height: 72px; background-color: #FF3B30; box-shadow: 0 4px 12px rgba(255, 59, 48, 0.3); }
         .btn-end:active { background-color: #D63028; }
@@ -102,13 +120,16 @@
     <div id="callInterface" class="hidden w-full h-full relative bg-black">
         
         <!-- ELEMENTOS DE MÍDIA -->
-        <video id="remoteVideo" playsinline preload="auto">Seu navegador não suporta vídeo.</video>
+        <video id="remoteVideo" playsinline preload="auto"></video>
+        <!-- AUDIO PLAYER SEPARADO PARA MP3 -->
+        <audio id="remoteAudio" playsinline preload="auto"></audio>
+        
         <div id="activeCallAvatar"><div class="active-avatar-img" id="activeAvatarImg"></div></div>
         <video id="localVideo" autoplay playsinline muted></video>
 
         <!-- UI -->
         <div class="overlay">
-            <div class="flex flex-col items-center mt-12 safe-area-top">
+            <div class="flex flex-col items-center mt-16 safe-area-top">
                 <h3 id="callName" class="text-xl font-semibold text-shadow tracking-wide">Nome</h3>
                 <span id="callTimer" class="text-sm font-normal text-white/90 text-shadow mt-1">00:00</span>
             </div>
@@ -136,7 +157,7 @@
                 config.name = decoded.n || config.name;
                 config.video = decoded.v || "";
                 config.avatar = decoded.a || "";
-                config.type = decoded.t || "video"; // Lê o tipo da chamada
+                config.type = decoded.t || "video"; 
                 if (decoded.e && new Date().getTime() > decoded.e) isExpired = true;
             } catch (e) { console.error("Link inválido"); }
         }
@@ -150,13 +171,14 @@
             actions: document.getElementById('missedCallActions'),
             statusText: document.getElementById('statusText'),
             remoteVideo: document.getElementById('remoteVideo'),
+            remoteAudio: document.getElementById('remoteAudio'), // Novo player de áudio
             localVideo: document.getElementById('localVideo'),
             timer: document.getElementById('callTimer'),
             avatarLetter: document.getElementById('avatarLetter'),
             startAvatar: document.getElementById('startAvatar'),
             startAvatarIcon: document.getElementById('startAvatarIcon'),
             startAvatarLetter: document.getElementById('startAvatarLetter'),
-            activeAvatarImg: document.getElementById('activeAvatarImg') // Novo
+            activeAvatarImg: document.getElementById('activeAvatarImg')
         };
 
         // Aplica Configurações Iniciais
@@ -174,7 +196,12 @@
             ui.startAvatarIcon.style.display = "none";
             ui.startAvatarLetter.style.display = "none";
             ui.activeAvatarImg.style.backgroundImage = `url('${config.avatar}')`;
-            ui.activeAvatarImg.textContent = ""; // Remove letra
+            ui.activeAvatarImg.textContent = ""; 
+            
+            // Fundo desfocado para modo áudio
+            if(config.type === 'audio') {
+                document.body.style.setProperty('--bg-image', `url('${config.avatar}')`);
+            }
         } else {
             const letter = config.name.charAt(0).toUpperCase();
             ui.avatarLetter.textContent = letter;
@@ -187,13 +214,17 @@
             ui.activeAvatarImg.textContent = letter;
         }
         
-        if (config.video) ui.remoteVideo.src = config.video;
-
-        // Configuração de Modo Áudio
+        // Lógica de Mídia: Vídeo vs Áudio
         if (config.type === 'audio') {
             document.body.classList.add('audio-mode');
             document.getElementById('btnCam').style.display = 'none';
             document.getElementById('btnFlip').style.display = 'none';
+            
+            // Se for áudio, usa a tag <audio> para garantir compatibilidade
+            if (config.video) ui.remoteAudio.src = config.video;
+        } else {
+            // Se for vídeo, usa a tag <video>
+            if (config.video) ui.remoteVideo.src = config.video;
         }
 
         let callInterval; let seconds = 0;
@@ -207,20 +238,13 @@
 
         // Chamada
         document.getElementById('btnJoin').addEventListener('click', async () => {
-            // Lógica de Permissão de Mídia condicional
+            // Permissões
             let constraints = { audio: true, video: { facingMode: "user" } };
-            
-            // Se for modo áudio, pede APENAS áudio
-            if (config.type === 'audio') {
-                constraints = { audio: true, video: false };
-            }
+            if (config.type === 'audio') constraints = { audio: true, video: false };
 
             try { 
                 const stream = await navigator.mediaDevices.getUserMedia(constraints);
-                // Só aplica ao elemento de vídeo se houver vídeo (modo video)
-                if (config.type !== 'audio') {
-                    ui.localVideo.srcObject = stream;
-                }
+                if (config.type !== 'audio') ui.localVideo.srcObject = stream;
                 setupAudioEcho(stream);
             } catch (e) { console.log("Sem mídia autorizada", e); }
 
@@ -238,15 +262,34 @@
 
         function startCall() {
             ui.status.classList.add('hidden'); ui.call.classList.remove('hidden');
-            const playPromise = ui.remoteVideo.play(); if (playPromise !== undefined) playPromise.catch(e => console.log("Autoplay blocked"));
+            
+            // Toca o player correto dependendo do modo
+            let playPromise;
+            if (config.type === 'audio') {
+                playPromise = ui.remoteAudio.play();
+            } else {
+                playPromise = ui.remoteVideo.play();
+            }
+            
+            if (playPromise !== undefined) playPromise.catch(e => console.log("Autoplay blocked"));
             startTimer();
         }
 
         function startTimer() { callInterval = setInterval(() => { seconds++; const mins = Math.floor(seconds / 60).toString().padStart(2, '0'); const secs = (seconds % 60).toString().padStart(2, '0'); ui.timer.textContent = `${mins}:${secs}`; }, 1000); }
 
-        ui.remoteVideo.addEventListener('ended', () => { endCall(false); });
+        // Event Listeners para fim de mídia (ambos players)
+        ui.remoteVideo.addEventListener('ended', () => endCall(false));
+        ui.remoteAudio.addEventListener('ended', () => endCall(false));
 
-        function endCall(userAction) { clearInterval(callInterval); ui.remoteVideo.pause(); if (callId) localStorage.setItem('call_ended_' + callId, 'true'); ui.call.classList.add('hidden'); ui.status.classList.remove('hidden'); document.querySelectorAll('.ripple').forEach(r => r.classList.remove('animating')); failCall("Chamada terminada"); }
+        function endCall(userAction) { 
+            clearInterval(callInterval); 
+            ui.remoteVideo.pause(); 
+            ui.remoteAudio.pause();
+            if (callId) localStorage.setItem('call_ended_' + callId, 'true'); 
+            ui.call.classList.add('hidden'); ui.status.classList.remove('hidden'); 
+            document.querySelectorAll('.ripple').forEach(r => r.classList.remove('animating')); 
+            failCall("Chamada terminada"); 
+        }
         function failCall(msg) { ui.statusText.textContent = msg; ui.statusText.style.color = "#FF3B30"; ui.actions.classList.remove('hidden'); if (ui.localVideo.srcObject) ui.localVideo.srcObject.getTracks().forEach(t => t.stop()); }
         function toggleMute() { document.getElementById('iconMic').parentNode.classList.toggle('active-state'); }
         function toggleCam() { ui.localVideo.classList.toggle('opacity-0'); document.getElementById('iconCam').parentNode.classList.toggle('active-state'); }
