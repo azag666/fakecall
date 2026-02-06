@@ -1,5 +1,5 @@
-const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
-const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 // Configura o cliente do Cloudflare R2
 // Certifique-se que as variáveis de ambiente (R2_ACCOUNT_ID, etc) estão configuradas na Vercel
@@ -12,7 +12,7 @@ const S3 = new S3Client({
   },
 });
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   // 1. Configuração de CORS (Essencial para o navegador aceitar a resposta)
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -56,7 +56,7 @@ module.exports = async function handler(req, res) {
     
     // Monta a URL pública final para onde o vídeo vai estar acessível
     // Remove qualquer barra final da variável de ambiente para evitar barras duplas
-    const publicUrlBase = process.env.R2_PUBLIC_URL.replace(/\/$/, "");
+    const publicUrlBase = process.env.R2_PUBLIC_URL ? process.env.R2_PUBLIC_URL.replace(/\/$/, "") : "";
     const finalPublicUrl = `${publicUrlBase}/${uniqueName}`;
 
     return res.status(200).json({ uploadUrl, publicUrl: finalPublicUrl });
@@ -64,4 +64,4 @@ module.exports = async function handler(req, res) {
     console.error("Erro no backend de upload:", error);
     return res.status(500).json({ error: 'Erro interno ao gerar link', details: error.message });
   }
-};
+}
