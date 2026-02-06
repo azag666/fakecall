@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Painel FakeCall</title>
+    <title>Dashboard FakeCall</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -11,8 +11,9 @@
                 extend: {
                     colors: {
                         telegram: '#2AABEE',
-                        darkbg: '#1c1c1d',
-                        card: '#2c2c2e'
+                        darkbg: '#0f0f0f',
+                        card: '#1c1c1e',
+                        input: '#2c2c2e'
                     }
                 }
             }
@@ -22,272 +23,410 @@
         body {
             background-color: #000;
             color: white;
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
         }
-        .input-dark {
-            background: #1c1c1d;
-            border: 1px solid #3a3a3c;
-            color: white;
-            transition: all 0.2s;
-        }
-        .input-dark:focus {
-            border-color: #2AABEE;
-            outline: none;
-        }
+        /* Scrollbar discreta */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #000; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+        
         .loader {
-            border: 3px solid rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.1);
             border-radius: 50%;
-            border-top: 3px solid #2AABEE;
-            width: 24px;
-            height: 24px;
+            border-top: 2px solid #2AABEE;
+            width: 20px;
+            height: 20px;
             animation: spin 1s linear infinite;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center p-4">
+<body class="bg-darkbg min-h-screen pb-20">
 
-    <!-- Header -->
-    <header class="w-full max-w-lg my-6 flex items-center gap-3">
-        <div class="w-10 h-10 bg-gradient-to-br from-[#2AABEE] to-[#0088cc] rounded-full flex items-center justify-center shadow-lg">
-            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M15.6 2.7a10 10 0 1 0 5.7 5.7"/><circle cx="12" cy="12" r="2"/></svg>
+    <!-- Navbar Fixa -->
+    <nav class="sticky top-0 z-50 bg-darkbg/90 backdrop-blur-md border-b border-white/10 px-4 py-3 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-gradient-to-br from-[#2AABEE] to-[#0088cc] rounded-full flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M15.6 2.7a10 10 0 1 0 5.7 5.7"/><circle cx="12" cy="12" r="2"/></svg>
+            </div>
+            <h1 class="text-sm font-bold tracking-wide">Painel Admin</h1>
         </div>
-        <div>
-            <h1 class="text-lg font-bold">Painel de Controle</h1>
-            <p class="text-xs text-gray-500">Configuração de Chamada Bot</p>
-        </div>
-    </header>
+        <button onclick="document.getElementById('createSection').scrollIntoView({behavior: 'smooth'})" class="bg-[#2AABEE] text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg shadow-blue-500/20 active:scale-95 transition-transform">
+            + Nova
+        </button>
+    </nav>
 
-    <!-- Main Card -->
-    <main class="w-full max-w-lg space-y-4">
-        
-        <div class="bg-[#2c2c2e] p-6 rounded-2xl shadow-xl border border-gray-800">
+    <div class="max-w-md mx-auto p-4 space-y-8">
+
+        <!-- SEÇÃO 1: CRIAR / EDITAR -->
+        <section id="createSection" class="space-y-4">
+            <div class="flex justify-between items-end">
+                <h2 class="text-xs font-bold text-gray-500 uppercase tracking-widest">Configuração</h2>
+                <button onclick="clearForm()" id="btnClear" class="hidden text-xs text-red-400 hover:text-red-300">Limpar</button>
+            </div>
             
-            <!-- 1. FOTO DE PERFIL -->
-            <div class="mb-5 flex items-center gap-4">
-                <div class="relative w-20 h-20 flex-shrink-0">
-                    <!-- Preview da Imagem -->
-                    <div id="avatarPreview" class="w-full h-full rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center overflow-hidden border-2 border-[#3a3a3c]">
-                        <span class="text-2xl font-bold text-white">?</span>
-                        <img id="avatarImg" class="absolute inset-0 w-full h-full object-cover hidden" />
+            <div class="bg-card rounded-2xl p-5 border border-white/5 shadow-xl">
+                
+                <!-- Avatar & Nome -->
+                <div class="flex items-center gap-4 mb-5">
+                    <div class="relative group">
+                        <div id="avatarPreview" class="w-16 h-16 rounded-full bg-input flex items-center justify-center overflow-hidden border border-white/10">
+                            <svg id="avatarIcon" class="text-gray-500" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            <img id="avatarImg" class="absolute inset-0 w-full h-full object-cover hidden" />
+                        </div>
+                        <label class="absolute -bottom-1 -right-1 bg-[#2AABEE] p-1.5 rounded-full cursor-pointer shadow-lg active:scale-90 transition-transform">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            <input type="file" id="avatarInput" accept="image/*" class="hidden">
+                        </label>
+                        <!-- Loading Avatar -->
+                        <div id="avatarLoading" class="absolute inset-0 bg-black/60 rounded-full hidden items-center justify-center"><div class="loader"></div></div>
                     </div>
-                    <!-- Botão de Upload Pequeno -->
-                    <label class="absolute bottom-0 right-0 bg-[#2AABEE] hover:bg-[#2390c9] text-white p-1.5 rounded-full cursor-pointer shadow-lg transition-transform active:scale-90">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                        <input type="file" id="avatarInput" accept="image/*" class="hidden">
-                    </label>
-                    <!-- Loading da Imagem -->
-                    <div id="avatarLoading" class="absolute inset-0 bg-black/50 rounded-full hidden items-center justify-center">
-                        <div class="loader w-6 h-6 border-2"></div>
+                    
+                    <div class="flex-1">
+                        <label class="text-[10px] text-gray-400 font-bold uppercase ml-1">Nome do Contato</label>
+                        <input type="text" id="inputName" class="w-full bg-input text-white p-3 rounded-xl text-sm border border-transparent focus:border-[#2AABEE] focus:outline-none transition-all" placeholder="Ex: Amor ❤️">
+                        <input type="hidden" id="inputAvatarUrl">
                     </div>
                 </div>
-                
-                <div class="flex-1">
-                    <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2 ml-1">Nome de Exibição</label>
-                    <input type="text" id="inputName" class="w-full input-dark p-3.5 rounded-xl text-sm font-medium" placeholder="Ex: Suporte Telegram" value="Suporte">
-                    <input type="hidden" id="inputAvatarUrl"> <!-- URL da foto salva aqui -->
-                </div>
-            </div>
 
-            <hr class="border-[#3a3a3c] my-6">
-
-            <!-- 2. UPLOAD DE VÍDEO -->
-            <div class="mb-5">
-                <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2 ml-1">Vídeo da Chamada</label>
-                
-                <div class="relative group">
-                    <div id="dropZone" class="border-2 border-dashed border-[#3a3a3c] rounded-xl p-6 text-center hover:border-[#2AABEE] hover:bg-[#2AABEE]/5 transition-colors cursor-pointer relative bg-[#1c1c1d]">
-                        <input type="file" id="videoInput" accept="video/mp4,video/webm,video/quicktime" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
-                        
-                        <div id="videoUploadContent" class="flex flex-col items-center pointer-events-none">
-                            <div class="w-12 h-12 bg-[#2c2c2e] rounded-full flex items-center justify-center mb-3 group-hover:bg-[#3a3a3c] transition-colors border border-[#3a3a3c]">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2AABEE" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <!-- Upload Vídeo -->
+                <div class="mb-5">
+                    <label class="text-[10px] text-gray-400 font-bold uppercase ml-1 mb-1 block">Vídeo da Chamada</label>
+                    <div class="relative">
+                        <input type="file" id="videoInput" accept="video/mp4,video/webm,video/quicktime" class="hidden">
+                        <div id="dropZone" onclick="document.getElementById('videoInput').click()" class="bg-input border border-dashed border-white/10 rounded-xl p-4 text-center cursor-pointer hover:bg-white/5 transition-colors group">
+                            
+                            <div id="videoUploadContent">
+                                <p class="text-xs text-gray-300 group-hover:text-white transition-colors flex items-center justify-center gap-2">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                    Carregar Vídeo
+                                </p>
                             </div>
-                            <p class="text-sm text-gray-300 font-medium">Toque para selecionar vídeo</p>
+                            
+                            <!-- Loading Video -->
+                            <div id="videoUploadLoading" class="hidden flex-col items-center justify-center">
+                                <div class="loader mb-2"></div>
+                                <span class="text-[10px] text-[#2AABEE]">Enviando...</span>
+                            </div>
                         </div>
-
-                        <div id="videoUploadLoading" class="hidden flex-col items-center justify-center py-2">
-                            <div class="loader mb-3"></div>
-                            <p class="text-xs text-[#2AABEE] font-medium animate-pulse">Enviando vídeo...</p>
+                        
+                        <!-- Input URL (Hidden but functional) -->
+                        <div class="mt-2 flex items-center bg-input rounded-lg px-3 py-2 border border-transparent focus-within:border-[#2AABEE]">
+                            <svg class="w-4 h-4 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                            <input type="text" id="inputVideo" class="bg-transparent w-full text-xs text-gray-300 focus:outline-none truncate" placeholder="URL do vídeo aparecerá aqui..." readonly>
                         </div>
                     </div>
                 </div>
 
-                <!-- Input URL Video -->
-                <div class="mt-3 relative w-full">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                <!-- Expiração -->
+                <div class="mb-6">
+                    <label class="text-[10px] text-gray-400 font-bold uppercase ml-1 mb-2 block">Duração do Link</label>
+                    <div class="grid grid-cols-3 gap-2 bg-input p-1 rounded-xl">
+                        <button onclick="setTime(5)" class="time-btn bg-darkbg text-white shadow-sm py-2 rounded-lg text-xs font-medium transition-all" data-val="5">5 min</button>
+                        <button onclick="setTime(30)" class="time-btn text-gray-400 hover:text-white py-2 rounded-lg text-xs font-medium transition-all" data-val="30">30 min</button>
+                        <button onclick="setTime(0)" class="time-btn text-gray-400 hover:text-white py-2 rounded-lg text-xs font-medium transition-all" data-val="0">Sempre</button>
                     </div>
-                    <input type="text" id="inputVideo" class="w-full input-dark pl-9 p-3 rounded-lg text-xs text-gray-300 truncate" placeholder="Link do vídeo..." >
+                    <input type="hidden" id="inputTime" value="5">
+                </div>
+
+                <!-- Ações -->
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="saveCall()" class="bg-input hover:bg-white/10 text-white font-medium py-3 rounded-xl text-sm transition-colors border border-white/5">
+                        Salvar
+                    </button>
+                    <button onclick="generateLinkNow()" class="bg-[#2AABEE] hover:bg-[#2390c9] text-white font-bold py-3 rounded-xl text-sm shadow-lg shadow-blue-500/20 active:scale-95 transition-transform">
+                        Gerar Link
+                    </button>
                 </div>
             </div>
+        </section>
 
-            <!-- 3. CONFIGURAÇÕES FINAIS -->
-            <div class="mb-6">
-                <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2 ml-1">Expiração do Link</label>
-                <div class="grid grid-cols-3 gap-2">
-                    <button type="button" onclick="setTime(5)" class="time-btn bg-[#1c1c1d] border border-[#3a3a3c] py-2.5 rounded-lg text-xs text-gray-300 transition-all hover:bg-[#3a3a3c]" data-val="5">5 min</button>
-                    <button type="button" onclick="setTime(30)" class="time-btn bg-[#1c1c1d] border border-[#3a3a3c] py-2.5 rounded-lg text-xs text-gray-300 transition-all hover:bg-[#3a3a3c]" data-val="30">30 min</button>
-                    <button type="button" onclick="setTime(0)" class="time-btn bg-[#2AABEE] border border-[#2AABEE] py-2.5 rounded-lg text-xs text-white font-medium shadow-lg shadow-blue-500/20" data-val="0">Sempre</button>
+        <!-- SEÇÃO 2: RESULTADO (Popup) -->
+        <div id="resultModal" class="fixed inset-0 z-[60] hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm fade-in">
+            <div class="bg-card w-full max-w-sm rounded-2xl p-6 border border-white/10 shadow-2xl relative">
+                <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+                
+                <div class="text-center mb-6">
+                    <div class="w-12 h-12 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <svg class="text-green-500" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+                    </div>
+                    <h3 class="text-white font-bold text-lg">Link Pronto!</h3>
+                    <p class="text-gray-400 text-xs">Copie e envie para a vítima.</p>
                 </div>
-                <input type="hidden" id="inputTime" value="0">
-            </div>
 
-            <!-- BOTÃO GERAR -->
-            <button onclick="generateLink()" class="w-full bg-[#2AABEE] hover:bg-[#2390c9] text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-500/30 transform active:scale-[0.98] transition-all flex items-center justify-center gap-2 text-sm uppercase tracking-wide">
-                Gerar Link da Chamada
-            </button>
-        </div>
-
-        <!-- RESULTADO -->
-        <div id="resultArea" class="hidden animate-fade-in-up mt-4 mb-10">
-            <div class="bg-[#2c2c2e] rounded-xl p-4 border border-[#3a3a3c]">
-                <p class="text-green-400 text-xs font-bold uppercase text-center mb-2">Link Gerado!</p>
-                <div class="bg-[#1c1c1d] rounded-lg p-2 mb-3 flex items-center border border-[#3a3a3c]">
-                    <input id="finalLink" class="w-full bg-transparent text-gray-300 text-xs focus:outline-none font-mono" readonly>
+                <div class="bg-darkbg p-3 rounded-xl border border-white/5 flex items-center mb-4">
+                    <input id="finalLink" class="bg-transparent w-full text-xs text-gray-300 focus:outline-none" readonly>
                 </div>
+
                 <div class="flex gap-2">
-                    <button onclick="copyLink()" id="btnCopy" class="flex-1 bg-[#3a3a3c] hover:bg-[#48484a] text-white py-2.5 rounded-lg text-xs font-medium transition-colors border border-gray-700">Copiar</button>
-                    <a id="btnTest" href="#" target="_blank" class="flex-1 bg-[#2AABEE] hover:bg-[#2390c9] text-white py-2.5 rounded-lg text-xs font-medium text-center transition-colors shadow-lg shadow-blue-500/20">Testar</a>
+                    <button onclick="copyLink()" id="btnCopy" class="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl transition-colors">Copiar</button>
+                    <a id="btnTest" href="#" target="_blank" class="flex-1 bg-input hover:bg-white/10 text-white font-bold py-3 rounded-xl text-center transition-colors">Testar</a>
                 </div>
             </div>
         </div>
 
-    </main>
+        <!-- SEÇÃO 3: MEUS SAVES -->
+        <section>
+            <h2 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4 px-1">Chamadas Salvas</h2>
+            <div id="savedList" class="space-y-3">
+                <!-- Itens serão injetados aqui -->
+                <div class="text-center py-10 text-gray-600 text-sm">
+                    Nenhuma chamada salva ainda.
+                </div>
+            </div>
+        </section>
+
+    </div>
 
     <script>
-        // === FUNÇÃO DE UPLOAD GENÉRICA ===
+        // === VARIÁVEIS GLOBAIS ===
+        let currentEditId = null;
+
+        // === 1. UPLOAD (GENÉRICO) ===
         async function uploadFile(file) {
-            // 1. Pedir URL assinada
             const res = await fetch('/api/upload', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ filename: file.name, filetype: file.type })
             });
-
-            if (!res.ok) throw new Error('Erro na API de upload');
+            if (!res.ok) throw new Error('Erro API');
             const { uploadUrl, publicUrl } = await res.json();
-
-            // 2. Upload para Cloudflare
+            
             const uploadRes = await fetch(uploadUrl, {
-                method: 'PUT',
-                body: file,
-                headers: { 'Content-Type': file.type }
+                method: 'PUT', body: file, headers: { 'Content-Type': file.type }
             });
-
-            if (!uploadRes.ok) throw new Error('Erro no envio para Cloudflare');
+            if (!uploadRes.ok) throw new Error('Erro Cloudflare');
             return publicUrl;
         }
 
-        // === UPLOAD DA FOTO DE PERFIL ===
-        const avatarInput = document.getElementById('avatarInput');
-        const avatarLoading = document.getElementById('avatarLoading');
-        const avatarImg = document.getElementById('avatarImg');
-        const inputAvatarUrl = document.getElementById('inputAvatarUrl');
-
-        avatarInput.addEventListener('change', async (e) => {
+        // === 2. EVENT LISTENERS DE UPLOAD ===
+        // Avatar
+        document.getElementById('avatarInput').addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
+            const loading = document.getElementById('avatarLoading');
+            loading.classList.remove('hidden'); loading.classList.add('flex');
+            
+            try {
+                const url = await uploadFile(file);
+                document.getElementById('inputAvatarUrl').value = url;
+                document.getElementById('avatarImg').src = url;
+                document.getElementById('avatarImg').classList.remove('hidden');
+                document.getElementById('avatarIcon').classList.add('hidden');
+            } catch(e) { alert('Erro no upload'); } 
+            finally { loading.classList.add('hidden'); loading.classList.remove('flex'); }
+        });
 
-            avatarLoading.classList.remove('hidden');
-            avatarLoading.classList.add('flex');
+        // Vídeo
+        document.getElementById('videoInput').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const content = document.getElementById('videoUploadContent');
+            const loading = document.getElementById('videoUploadLoading');
+            
+            content.classList.add('hidden');
+            loading.classList.remove('hidden'); loading.classList.add('flex');
 
             try {
                 const url = await uploadFile(file);
-                inputAvatarUrl.value = url;
-                avatarImg.src = url;
-                avatarImg.classList.remove('hidden');
-            } catch (err) {
-                alert('Erro ao enviar imagem: ' + err.message);
-            } finally {
-                avatarLoading.classList.add('hidden');
-                avatarLoading.classList.remove('flex');
+                document.getElementById('inputVideo').value = url;
+            } catch(e) { 
+                alert('Erro no upload'); 
+                content.classList.remove('hidden');
+            } finally { 
+                loading.classList.add('hidden'); loading.classList.remove('flex'); 
+                // Mantém o estado de "sucesso visual" se funcionou
+                if(document.getElementById('inputVideo').value) {
+                    content.innerHTML = `<p class="text-xs text-green-400 font-bold flex items-center gap-2"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Vídeo Carregado</p>`;
+                    content.classList.remove('hidden');
+                }
             }
         });
 
-        // === UPLOAD DE VÍDEO ===
-        const videoInput = document.getElementById('videoInput');
-        const videoContent = document.getElementById('videoUploadContent');
-        const videoLoading = document.getElementById('videoUploadLoading');
-        const inputVideo = document.getElementById('inputVideo');
-
-        videoInput.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            videoContent.classList.add('hidden');
-            videoLoading.classList.remove('hidden');
-            videoLoading.classList.add('flex');
-
-            try {
-                const url = await uploadFile(file);
-                inputVideo.value = url;
-            } catch (err) {
-                alert('Erro ao enviar vídeo: ' + err.message);
-                videoContent.classList.remove('hidden');
-            } finally {
-                videoLoading.classList.add('hidden');
-                videoLoading.classList.remove('flex');
-            }
-        });
-
-        // === GERAR LINK ===
-        function utf8_to_b64(str) {
-            return window.btoa(unescape(encodeURIComponent(str)));
+        // === 3. FUNÇÕES DE DADOS (CRUD) ===
+        function getSavedCalls() {
+            return JSON.parse(localStorage.getItem('fakecall_saves') || '[]');
         }
 
-        function generateLink() {
-            try {
-                const name = document.getElementById('inputName').value.trim() || "Usuário";
-                const video = inputVideo.value.trim();
-                const avatar = inputAvatarUrl.value.trim();
-                const mins = parseInt(document.getElementById('inputTime').value);
-                
-                if (!video) { alert("O vídeo é obrigatório!"); return; }
+        function saveCall() {
+            const name = document.getElementById('inputName').value.trim();
+            const video = document.getElementById('inputVideo').value.trim();
+            const avatar = document.getElementById('inputAvatarUrl').value.trim();
+            const mins = document.getElementById('inputTime').value;
 
-                let expiryTime = null;
-                if (mins > 0) expiryTime = new Date().getTime() + (mins * 60 * 1000);
-                
-                const data = { 
-                    n: name, 
-                    v: video, 
-                    a: avatar, 
-                    e: expiryTime 
-                };
-                
-                // Usa função segura para acentos e emojis
-                const base64Param = utf8_to_b64(JSON.stringify(data));
-                
-                const path = window.location.pathname;
-                const dir = path.substring(0, path.lastIndexOf('/'));
-                const baseUrl = (window.location.origin + dir).replace(/\/$/, "") + '/';
-                
-                const finalLink = `${baseUrl}?d=${base64Param}`;
-                
-                document.getElementById('resultArea').classList.remove('hidden');
-                document.getElementById('finalLink').value = finalLink;
-                document.getElementById('btnTest').href = finalLink;
-                document.getElementById('resultArea').scrollIntoView({ behavior: 'smooth' });
-            } catch (err) {
-                alert("Erro ao gerar link: " + err.message);
-                console.error(err);
+            if (!name || !video) { alert('Nome e Vídeo são obrigatórios para salvar.'); return; }
+
+            const calls = getSavedCalls();
+            const newCall = {
+                id: currentEditId || Date.now().toString(),
+                name, video, avatar, mins,
+                timestamp: Date.now()
+            };
+
+            if (currentEditId) {
+                const index = calls.findIndex(c => c.id === currentEditId);
+                if (index !== -1) calls[index] = newCall;
+            } else {
+                calls.unshift(newCall);
             }
+
+            localStorage.setItem('fakecall_saves', JSON.stringify(calls));
+            renderList();
+            clearForm();
+            alert('Configuração salva!');
         }
 
-        // === UTILITÁRIOS ===
+        function deleteCall(id) {
+            if(!confirm('Apagar esta chamada?')) return;
+            const calls = getSavedCalls().filter(c => c.id !== id);
+            localStorage.setItem('fakecall_saves', JSON.stringify(calls));
+            renderList();
+        }
+
+        function loadCall(id) {
+            const call = getSavedCalls().find(c => c.id === id);
+            if (!call) return;
+
+            document.getElementById('inputName').value = call.name;
+            document.getElementById('inputVideo').value = call.video;
+            document.getElementById('inputAvatarUrl').value = call.avatar || '';
+            setTime(parseInt(call.mins));
+
+            // Atualiza UI Avatar
+            if(call.avatar) {
+                document.getElementById('avatarImg').src = call.avatar;
+                document.getElementById('avatarImg').classList.remove('hidden');
+                document.getElementById('avatarIcon').classList.add('hidden');
+            } else {
+                resetAvatarUI();
+            }
+
+            // Atualiza UI Video
+            document.getElementById('videoUploadContent').innerHTML = `<p class="text-xs text-green-400 font-bold flex items-center gap-2"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Vídeo Carregado</p>`;
+
+            currentEditId = call.id;
+            document.getElementById('btnClear').classList.remove('hidden');
+            document.getElementById('createSection').scrollIntoView({behavior: 'smooth'});
+        }
+
+        function renderList() {
+            const list = document.getElementById('savedList');
+            const calls = getSavedCalls();
+
+            if (calls.length === 0) {
+                list.innerHTML = '<div class="text-center py-8 text-gray-600 text-xs">Nenhuma chamada salva.</div>';
+                return;
+            }
+
+            list.innerHTML = calls.map(c => `
+                <div class="bg-card p-4 rounded-xl border border-white/5 flex items-center justify-between group">
+                    <div class="flex items-center gap-3 overflow-hidden">
+                        <div class="w-10 h-10 rounded-full bg-input flex-shrink-0 bg-cover bg-center border border-white/10" style="background-image: url('${c.avatar || ''}');">
+                            ${!c.avatar ? '<div class="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500">'+c.name.charAt(0)+'</div>' : ''}
+                        </div>
+                        <div class="min-w-0">
+                            <h4 class="text-sm font-bold text-white truncate">${c.name}</h4>
+                            <p class="text-[10px] text-gray-500 truncate">Duração: ${c.mins > 0 ? c.mins + ' min' : 'Infinito'}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center gap-2">
+                        <button onclick="quickGenerate('${c.id}')" class="bg-[#2AABEE]/10 hover:bg-[#2AABEE]/20 text-[#2AABEE] p-2 rounded-lg transition-colors" title="Gerar Link">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                        </button>
+                        <button onclick="loadCall('${c.id}')" class="text-gray-500 hover:text-white p-2" title="Editar">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        </button>
+                        <button onclick="deleteCall('${c.id}')" class="text-gray-500 hover:text-red-400 p-2" title="Excluir">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // === 4. GERAÇÃO DE LINK ===
+        function utf8_to_b64(str) { return window.btoa(unescape(encodeURIComponent(str))); }
+
+        function createUrl(name, video, avatar, mins) {
+            let expiryTime = null;
+            if (mins > 0) expiryTime = new Date().getTime() + (mins * 60 * 1000);
+            
+            const data = { n: name, v: video, a: avatar, e: expiryTime };
+            const base64Param = utf8_to_b64(JSON.stringify(data));
+            
+            // Lógica de URL base
+            const path = window.location.pathname;
+            const dir = path.substring(0, path.lastIndexOf('/'));
+            const baseUrl = (window.location.origin + dir).replace(/\/$/, "") + '/';
+            
+            return `${baseUrl}?d=${base64Param}`;
+        }
+
+        function generateLinkNow() {
+            const name = document.getElementById('inputName').value.trim() || "Usuário";
+            const video = document.getElementById('inputVideo').value.trim();
+            const avatar = document.getElementById('inputAvatarUrl').value.trim();
+            const mins = parseInt(document.getElementById('inputTime').value);
+
+            if (!video) { alert("Vídeo obrigatório."); return; }
+
+            const url = createUrl(name, video, avatar, mins);
+            showModal(url);
+        }
+
+        function quickGenerate(id) {
+            const call = getSavedCalls().find(c => c.id === id);
+            if(!call) return;
+            const url = createUrl(call.name, call.video, call.avatar, parseInt(call.mins));
+            showModal(url);
+        }
+
+        // === 5. UI UTILS ===
         function setTime(mins) {
             document.getElementById('inputTime').value = mins;
             document.querySelectorAll('.time-btn').forEach(btn => {
                 const val = parseInt(btn.getAttribute('data-val'));
                 if (val === mins) {
-                    btn.className = "time-btn bg-[#2AABEE] border border-[#2AABEE] py-2.5 rounded-lg text-xs text-white font-medium shadow-lg transition-all";
+                    btn.className = "time-btn bg-darkbg text-white shadow-sm py-2 rounded-lg text-xs font-medium transition-all border border-[#2AABEE]";
                 } else {
-                    btn.className = "time-btn bg-[#1c1c1d] border border-[#3a3a3c] py-2.5 rounded-lg text-xs text-gray-300 hover:bg-[#3a3a3c] transition-all";
+                    btn.className = "time-btn text-gray-400 hover:text-white py-2 rounded-lg text-xs font-medium transition-all";
                 }
             });
+        }
+
+        function clearForm() {
+            currentEditId = null;
+            document.getElementById('inputName').value = '';
+            document.getElementById('inputVideo').value = '';
+            document.getElementById('inputAvatarUrl').value = '';
+            document.getElementById('inputTime').value = 5;
+            resetAvatarUI();
+            document.getElementById('videoUploadContent').innerHTML = `<p class="text-xs text-gray-300 group-hover:text-white transition-colors flex items-center justify-center gap-2"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Carregar Vídeo</p>`;
+            document.getElementById('btnClear').classList.add('hidden');
+            setTime(5);
+        }
+
+        function resetAvatarUI() {
+            document.getElementById('avatarImg').src = '';
+            document.getElementById('avatarImg').classList.add('hidden');
+            document.getElementById('avatarIcon').classList.remove('hidden');
+        }
+
+        function showModal(url) {
+            document.getElementById('finalLink').value = url;
+            document.getElementById('btnTest').href = url;
+            document.getElementById('resultModal').classList.remove('hidden');
+            document.getElementById('resultModal').classList.add('flex');
+        }
+
+        function closeModal() {
+            document.getElementById('resultModal').classList.add('hidden');
+            document.getElementById('resultModal').classList.remove('flex');
         }
 
         function copyLink() {
@@ -295,9 +434,17 @@
             copyText.select();
             navigator.clipboard.writeText(copyText.value);
             const btn = document.getElementById('btnCopy');
-            btn.textContent = "Copiado!";
-            setTimeout(() => btn.textContent = "Copiar", 2000);
+            const original = btn.innerText;
+            btn.innerText = "Copiado!";
+            btn.classList.replace('bg-green-600', 'bg-green-500');
+            setTimeout(() => {
+                btn.innerText = original;
+                btn.classList.replace('bg-green-500', 'bg-green-600');
+            }, 2000);
         }
+
+        // Init
+        renderList();
     </script>
 </body>
 </html>
