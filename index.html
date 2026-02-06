@@ -325,7 +325,7 @@
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: true });
                 ui.localVideo.srcObject = stream;
                 
-                // Configura o retorno de áudio (Eco Sutil)
+                // Configura o retorno de áudio (Eco Aumentado)
                 setupAudioEcho(stream);
                 
             } catch (e) { console.log("Sem câmera/microfone", e); }
@@ -352,11 +352,11 @@
             
             // Delay para simular latência de rede (Eco)
             const delay = audioCtx.createDelay();
-            delay.delayTime.value = 0.2; // 200ms de atraso
+            delay.delayTime.value = 0.3; // AUMENTADO PARA 300ms (Eco mais notável)
 
-            // Volume bem baixo (5%) para evitar microfonia e ser sutil
+            // Volume (Eco mais audível)
             const gain = audioCtx.createGain();
-            gain.gain.value = 0.05; 
+            gain.gain.value = 0.2; // AUMENTADO PARA 20% (Era 5%)
 
             source.connect(delay);
             delay.connect(gain);
